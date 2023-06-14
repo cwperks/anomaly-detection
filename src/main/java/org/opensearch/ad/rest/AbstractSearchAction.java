@@ -30,6 +30,7 @@ import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
+import org.opensearch.rest.NamedRoute;
 import org.opensearch.rest.RestChannel;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
@@ -48,6 +49,8 @@ public abstract class AbstractSearchAction<T extends ToXContentObject> extends B
     protected final List<Pair<String, String>> deprecatedPaths;
     protected final ActionType<SearchResponse> actionType;
 
+    protected String restActionName;
+
     private final Logger logger = LogManager.getLogger(AbstractSearchAction.class);
 
     public AbstractSearchAction(
@@ -62,6 +65,22 @@ public abstract class AbstractSearchAction<T extends ToXContentObject> extends B
         this.urlPaths = urlPaths;
         this.deprecatedPaths = deprecatedPaths;
         this.actionType = actionType;
+    }
+
+    public AbstractSearchAction(
+        List<String> urlPaths,
+        List<Pair<String, String>> deprecatedPaths,
+        String index,
+        Class<T> clazz,
+        ActionType<SearchResponse> actionType,
+        String restActionName
+    ) {
+        this.index = index;
+        this.clazz = clazz;
+        this.urlPaths = urlPaths;
+        this.deprecatedPaths = deprecatedPaths;
+        this.actionType = actionType;
+        this.restActionName = restActionName;
     }
 
     @Override
@@ -104,8 +123,13 @@ public abstract class AbstractSearchAction<T extends ToXContentObject> extends B
     public List<Route> routes() {
         List<Route> routes = new ArrayList<>();
         for (String path : urlPaths) {
-            routes.add(new Route(RestRequest.Method.POST, path));
-            routes.add(new Route(RestRequest.Method.GET, path));
+            if (restActionName != null) {
+                routes.add(new NamedRoute(RestRequest.Method.POST, path, restActionName));
+                routes.add(new NamedRoute(RestRequest.Method.GET, path, restActionName));
+            } else {
+                routes.add(new Route(RestRequest.Method.POST, path));
+                routes.add(new Route(RestRequest.Method.GET, path));
+            }
         }
         return routes;
     }
