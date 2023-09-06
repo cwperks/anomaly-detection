@@ -47,6 +47,8 @@ jobs:
             docker_version=$version
           fi
           echo plugin version plugin_version qualifier docker_version
+          plugin_version=3.0.0.0-SNAPSHOT
+          docker_version=3.0.0-SNAPSHOT
           echo "($plugin) ($version) ($plugin_version) ($qualifier) ($docker_version)"
 
           cd ..
@@ -59,7 +61,7 @@ jobs:
             docker build -t opensearch-ad:test .
             echo "imagePresent=true" >> $GITHUB_ENV
           else
-            echo "imagePresent=true" >> $GITHUB_ENV
+            echo "imagePresent=false" >> $GITHUB_ENV
           fi
       - name: Run Docker Image
         if: env.imagePresent == 'true'
