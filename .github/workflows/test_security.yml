@@ -42,7 +42,7 @@ jobs:
 
           if $qualifier!=SNAPSHOT
           then
-            docker_version=$version
+            docker_version=$version-$qualifier
           else
             docker_version=$version
           fi
@@ -59,7 +59,7 @@ jobs:
             docker build -t opensearch-ad:test .
             echo "imagePresent=true" >> $GITHUB_ENV
           else
-            echo "imagePresent=false" >> $GITHUB_ENV
+            echo "imagePresent=true" >> $GITHUB_ENV
           fi
       - name: Run Docker Image
         if: env.imagePresent == 'true'
