@@ -42,7 +42,7 @@ jobs:
 
           if $qualifier!=SNAPSHOT
           then
-            docker_version=$version-$qualifier
+            docker_version=$version
           else
             docker_version=$version
           fi
