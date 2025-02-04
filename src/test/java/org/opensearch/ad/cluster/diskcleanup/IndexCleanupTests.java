@@ -39,11 +39,15 @@ import org.opensearch.index.store.StoreStats;
 import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.cluster.diskcleanup.IndexCleanup;
 import org.opensearch.timeseries.util.ClientUtil;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class IndexCleanupTests extends AbstractTimeSeriesTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     Client client;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    RunAsSubjectClient pluginClient;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     ClusterService clusterService;
@@ -76,7 +80,7 @@ public class IndexCleanupTests extends AbstractTimeSeriesTest {
         MockitoAnnotations.initMocks(this);
         when(clusterService.state().getRoutingTable().hasIndex(anyString())).thenReturn(true);
         super.setUpLog4jForJUnit(IndexCleanup.class);
-        indexCleanup = new IndexCleanup(client, clientUtil, clusterService);
+        indexCleanup = new IndexCleanup(client, clientUtil, clusterService, pluginClient);
         when(indicesStatsResponse.getShards()).thenReturn(new ShardStats[] { shardStats });
         when(shardStats.getStats()).thenReturn(commonStats);
         when(commonStats.getStore()).thenReturn(storeStats);

@@ -18,7 +18,6 @@ import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.forecast.constant.ForecastCommonMessages;
@@ -46,6 +45,7 @@ import org.opensearch.timeseries.feature.FeatureManager;
 import org.opensearch.timeseries.stats.StatNames;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.ResultProcessor;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -72,6 +72,7 @@ public class ForecastResultTransportAction extends HandledTransportAction<Foreca
     private final SecurityClientUtil clientUtil;
     private final IndexNameExpressionResolver indexNameExpressionResolver;
     private final FeatureManager featureManager;
+    private final RunAsSubjectClient pluginClient;
 
     @Inject
     public ForecastResultTransportAction(
@@ -90,7 +91,8 @@ public class ForecastResultTransportAction extends HandledTransportAction<Foreca
         ForecastStats forecastStats,
         ThreadPool threadPool,
         NamedXContentRegistry xContentRegistry,
-        ForecastTaskManager realTimeTaskManager
+        ForecastTaskManager realTimeTaskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(ForecastResultAction.NAME, transportService, actionFilters, ForecastResultRequest::new);
 
@@ -106,6 +108,7 @@ public class ForecastResultTransportAction extends HandledTransportAction<Foreca
         this.featureManager = featureManager;
 
         this.client = client;
+        this.pluginClient = pluginClient;
         this.circuitBreakerService = circuitBreakerService;
         this.hcForecasters = new HashSet<>();
         this.forecastStats = forecastStats;
@@ -116,71 +119,66 @@ public class ForecastResultTransportAction extends HandledTransportAction<Foreca
 
     @Override
     protected void doExecute(Task task, ForecastResultRequest request, ActionListener<ForecastResultResponse> listener) {
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            String forecastID = request.getConfigId();
-            ActionListener<ForecastResultResponse> original = listener;
-            listener = ActionListener.wrap(r -> {
-                hcForecasters.remove(forecastID);
-                original.onResponse(r);
-            }, e -> {
-                // If exception is TimeSeriesException and it should not be counted in stats,
-                // we will not count it in failure stats.
-                if (!(e instanceof TimeSeriesException) || ((TimeSeriesException) e).isCountedInStats()) {
-                    forecastStats.getStat(StatNames.FORECAST_EXECUTE_FAIL_COUNT.getName()).increment();
-                    if (hcForecasters.contains(forecastID)) {
-                        forecastStats.getStat(StatNames.FORECAST_HC_EXECUTE_FAIL_COUNT.getName()).increment();
-                    }
+        String forecastID = request.getConfigId();
+        ActionListener<ForecastResultResponse> original = listener;
+        listener = ActionListener.wrap(r -> {
+            hcForecasters.remove(forecastID);
+            original.onResponse(r);
+        }, e -> {
+            // If exception is TimeSeriesException and it should not be counted in stats,
+            // we will not count it in failure stats.
+            if (!(e instanceof TimeSeriesException) || ((TimeSeriesException) e).isCountedInStats()) {
+                forecastStats.getStat(StatNames.FORECAST_EXECUTE_FAIL_COUNT.getName()).increment();
+                if (hcForecasters.contains(forecastID)) {
+                    forecastStats.getStat(StatNames.FORECAST_HC_EXECUTE_FAIL_COUNT.getName()).increment();
                 }
-                hcForecasters.remove(forecastID);
-                original.onFailure(e);
-            });
-
-            if (!ForecastEnabledSetting.isForecastEnabled()) {
-                throw new EndRunException(forecastID, ForecastCommonMessages.DISABLED_ERR_MSG, true).countedInStats(false);
             }
+            hcForecasters.remove(forecastID);
+            original.onFailure(e);
+        });
 
-            forecastStats.getStat(StatNames.FORECAST_EXECUTE_REQUEST_COUNT.getName()).increment();
+        if (!ForecastEnabledSetting.isForecastEnabled()) {
+            throw new EndRunException(forecastID, ForecastCommonMessages.DISABLED_ERR_MSG, true).countedInStats(false);
+        }
 
-            if (circuitBreakerService.isOpen()) {
-                listener.onFailure(new LimitExceededException(forecastID, CommonMessages.MEMORY_CIRCUIT_BROKEN_ERR_MSG, false));
-                return;
-            }
+        forecastStats.getStat(StatNames.FORECAST_EXECUTE_REQUEST_COUNT.getName()).increment();
 
-            this.resultProcessor = new ForecastResultProcessor(
-                ForecastSettings.FORECAST_REQUEST_TIMEOUT,
-                EntityForecastResultAction.NAME,
-                StatNames.FORECAST_HC_EXECUTE_REQUEST_COUNT,
-                settings,
-                clusterService,
-                threadPool,
-                hashRing,
-                nodeStateManager,
-                transportService,
-                forecastStats,
-                realTimeTaskManager,
-                xContentRegistry,
-                client,
-                clientUtil,
-                indexNameExpressionResolver,
-                ForecastResultResponse.class,
-                featureManager,
-                AnalysisType.FORECAST,
-                false
-            );
+        if (circuitBreakerService.isOpen()) {
+            listener.onFailure(new LimitExceededException(forecastID, CommonMessages.MEMORY_CIRCUIT_BROKEN_ERR_MSG, false));
+            return;
+        }
 
-            try {
-                nodeStateManager
-                    .getConfig(
-                        forecastID,
-                        AnalysisType.FORECAST,
-                        resultProcessor.onGetConfig(listener, forecastID, request, Optional.of(hcForecasters))
-                    );
-            } catch (Exception ex) {
-                ResultProcessor.handleExecuteException(ex, listener, forecastID);
-            }
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
+        this.resultProcessor = new ForecastResultProcessor(
+            ForecastSettings.FORECAST_REQUEST_TIMEOUT,
+            EntityForecastResultAction.NAME,
+            StatNames.FORECAST_HC_EXECUTE_REQUEST_COUNT,
+            settings,
+            clusterService,
+            threadPool,
+            hashRing,
+            nodeStateManager,
+            transportService,
+            forecastStats,
+            realTimeTaskManager,
+            xContentRegistry,
+            client,
+            clientUtil,
+            indexNameExpressionResolver,
+            ForecastResultResponse.class,
+            featureManager,
+            AnalysisType.FORECAST,
+            false
+        );
+
+        try {
+            nodeStateManager
+                .getConfig(
+                    forecastID,
+                    AnalysisType.FORECAST,
+                    resultProcessor.onGetConfig(listener, forecastID, request, Optional.of(hcForecasters))
+                );
+        } catch (Exception ex) {
+            ResultProcessor.handleExecuteException(ex, listener, forecastID);
         }
     }
 }

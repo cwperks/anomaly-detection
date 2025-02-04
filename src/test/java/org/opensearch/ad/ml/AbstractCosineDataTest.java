@@ -58,6 +58,7 @@ import org.opensearch.timeseries.model.Entity;
 import org.opensearch.timeseries.model.IntervalTimeConfiguration;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.ClientUtil;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 
 import com.amazon.randomcutforest.parkservices.ThresholdedRandomCutForest;
@@ -96,6 +97,7 @@ public class AbstractCosineDataTest extends AbstractTimeSeriesTest {
     int shingleSize;
     Client client;
     SecurityClientUtil securityCientUtil;
+    RunAsSubjectClient pluginClient;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -115,6 +117,7 @@ public class AbstractCosineDataTest extends AbstractTimeSeriesTest {
 
         client = mock(Client.class);
         clientUtil = mock(ClientUtil.class);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         detector = TestHelpers.AnomalyDetectorBuilder
             .newInstance(1)
@@ -139,7 +142,8 @@ public class AbstractCosineDataTest extends AbstractTimeSeriesTest {
             client,
             clientUtil,
             threadPool,
-            createClusterServiceForNode(threadPool, createDiscoverynode("node1"), nodestateSetting)
+            createClusterServiceForNode(threadPool, createDiscoverynode("node1"), nodestateSetting),
+            pluginClient
         );
 
         imputer = new LinearUniformImputer(true);

@@ -61,6 +61,7 @@ import org.opensearch.tasks.Task;
 import org.opensearch.telemetry.tracing.noop.NoopTracer;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.timeseries.TestHelpers;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.Transport;
 import org.opensearch.transport.TransportService;
 
@@ -122,7 +123,8 @@ public class SearchAnomalyResultActionTests extends HistoricalAnalysisIntegTestC
             searchHandler,
             clusterService,
             indexNameExpressionResolver,
-            client
+            client,
+            mock(RunAsSubjectClient.class)
         );
     }
 
@@ -221,14 +223,7 @@ public class SearchAnomalyResultActionTests extends HistoricalAnalysisIntegTestC
 
     @Test
     public void testMultiSearch_NoOnlyQueryCustomResultIndex() {
-        action
-            .multiSearch(
-                Arrays.asList("test"),
-                mock(SearchRequest.class),
-                mock(PlainActionFuture.class),
-                false,
-                threadContext.stashContext()
-            );
+        action.multiSearch(Arrays.asList("test"), mock(SearchRequest.class), mock(PlainActionFuture.class), false);
 
         verify(client).multiSearch(any(), any());
     }

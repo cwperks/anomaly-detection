@@ -16,13 +16,14 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.timeseries.transport.handler.SearchHandler;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 /**
  * Handle general search request, check user role and return search response.
  */
 public class ADSearchHandler extends SearchHandler {
 
-    public ADSearchHandler(Settings settings, ClusterService clusterService, Client client) {
-        super(settings, clusterService, client, AnomalyDetectorSettings.AD_FILTER_BY_BACKEND_ROLES);
+    public ADSearchHandler(Settings settings, ClusterService clusterService, Client client, RunAsSubjectClient pluginClient) {
+        super(settings, clusterService, client, AnomalyDetectorSettings.AD_FILTER_BY_BACKEND_ROLES, pluginClient);
     }
 }

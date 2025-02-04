@@ -35,6 +35,7 @@ import org.opensearch.timeseries.rest.handler.IndexJobActionHandler;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.transport.ResultRequest;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ForecastIndexJobActionHandler extends
@@ -47,7 +48,8 @@ public class ForecastIndexJobActionHandler extends
         ForecastTaskManager adTaskManager,
         ExecuteForecastResultResponseRecorder recorder,
         NodeStateManager nodeStateManager,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             client,
@@ -61,7 +63,8 @@ public class ForecastIndexJobActionHandler extends
             StopForecasterAction.INSTANCE,
             nodeStateManager,
             settings,
-            FORECAST_REQUEST_TIMEOUT
+            FORECAST_REQUEST_TIMEOUT,
+            pluginClient
         );
     }
 

@@ -18,6 +18,7 @@ import org.opensearch.rest.RestRequest.Method;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.model.Config;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 
 /**
@@ -68,7 +69,8 @@ public class ValidateForecasterActionHandler extends AbstractForecasterActionHan
         SearchFeatureDao searchFeatureDao,
         String validationType,
         Clock clock,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             clusterService,
@@ -94,7 +96,8 @@ public class ValidateForecasterActionHandler extends AbstractForecasterActionHan
             validationType,
             true,
             clock,
-            settings
+            settings,
+            pluginClient
         );
     }
 

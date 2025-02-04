@@ -27,6 +27,7 @@ import org.opensearch.timeseries.rest.handler.Processor;
 import org.opensearch.timeseries.transport.BaseValidateConfigTransportAction;
 import org.opensearch.timeseries.transport.ValidateConfigRequest;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -43,7 +44,8 @@ public class ValidateForecasterTransportAction extends BaseValidateConfigTranspo
         ForecastIndexManagement anomalyDetectionIndices,
         ActionFilters actionFilters,
         TransportService transportService,
-        SearchFeatureDao searchFeatureDao
+        SearchFeatureDao searchFeatureDao,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             ValidateForecasterAction.NAME,
@@ -57,7 +59,8 @@ public class ValidateForecasterTransportAction extends BaseValidateConfigTranspo
             transportService,
             searchFeatureDao,
             FORECAST_FILTER_BY_BACKEND_ROLES,
-            ValidationAspect.FORECASTER
+            ValidationAspect.FORECASTER,
+            pluginClient
         );
     }
 
@@ -80,7 +83,8 @@ public class ValidateForecasterTransportAction extends BaseValidateConfigTranspo
             searchFeatureDao,
             request.getValidationType(),
             clock,
-            settings
+            settings,
+            pluginClient
         );
     }
 }

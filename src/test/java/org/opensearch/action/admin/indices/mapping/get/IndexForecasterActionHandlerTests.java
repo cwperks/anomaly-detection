@@ -97,7 +97,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             null,
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -159,7 +160,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             null,
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -224,7 +226,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             null,
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -301,7 +304,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -367,7 +371,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -441,7 +446,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -539,7 +545,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -650,7 +657,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -784,7 +792,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -928,7 +937,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -1058,7 +1068,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -1190,7 +1201,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -1339,7 +1351,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             mock(ForecastTaskManager.class),
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -1392,7 +1405,8 @@ public class IndexForecasterActionHandlerTests extends AbstractForecasterActionH
             null,
             null,
             searchFeatureDao,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {

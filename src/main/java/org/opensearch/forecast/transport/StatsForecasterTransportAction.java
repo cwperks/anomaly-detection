@@ -34,6 +34,7 @@ import org.opensearch.timeseries.transport.BaseStatsTransportAction;
 import org.opensearch.timeseries.transport.StatsRequest;
 import org.opensearch.timeseries.transport.StatsResponse;
 import org.opensearch.timeseries.util.MultiResponsesDelegateActionListener;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class StatsForecasterTransportAction extends BaseStatsTransportAction {
@@ -47,10 +48,10 @@ public class StatsForecasterTransportAction extends BaseStatsTransportAction {
         ActionFilters actionFilters,
         Client client,
         ForecastStats stats,
-        ClusterService clusterService
-
+        ClusterService clusterService,
+        RunAsSubjectClient pluginClient
     ) {
-        super(transportService, actionFilters, client, stats, clusterService, StatsForecasterAction.NAME);
+        super(transportService, actionFilters, client, stats, clusterService, StatsForecasterAction.NAME, pluginClient);
     }
 
     /**

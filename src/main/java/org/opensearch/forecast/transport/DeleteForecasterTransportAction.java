@@ -22,6 +22,7 @@ import org.opensearch.timeseries.AnalysisType;
 import org.opensearch.timeseries.NodeStateManager;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.BaseDeleteConfigTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class DeleteForecasterTransportAction extends
@@ -36,7 +37,8 @@ public class DeleteForecasterTransportAction extends
         Settings settings,
         NamedXContentRegistry xContentRegistry,
         NodeStateManager nodeStateManager,
-        ForecastTaskManager taskManager
+        ForecastTaskManager taskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -52,7 +54,8 @@ public class DeleteForecasterTransportAction extends
             AnalysisType.FORECAST,
             ForecastIndex.STATE.getIndexName(),
             Forecaster.class,
-            ForecastTaskType.RUN_ONCE_TASK_TYPES
+            ForecastTaskType.RUN_ONCE_TASK_TYPES,
+            pluginClient
         );
     }
 }

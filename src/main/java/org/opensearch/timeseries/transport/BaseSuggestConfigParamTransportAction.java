@@ -25,7 +25,6 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.forecast.transport.SuggestName;
@@ -40,6 +39,7 @@ import org.opensearch.timeseries.model.IntervalTimeConfiguration;
 import org.opensearch.timeseries.rest.handler.IntervalCalculation;
 import org.opensearch.timeseries.rest.handler.LatestTimeRetriever;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -56,6 +56,7 @@ public abstract class BaseSuggestConfigParamTransportAction extends
     protected Clock clock;
     protected AnalysisType context;
     protected final Set<String> allSuggestParamStrs;
+    protected final RunAsSubjectClient pluginClient;
 
     public BaseSuggestConfigParamTransportAction(
         String actionName,
@@ -67,7 +68,8 @@ public abstract class BaseSuggestConfigParamTransportAction extends
         TransportService transportService,
         Setting<Boolean> filterByBackendRoleSetting,
         AnalysisType context,
-        SearchFeatureDao searchFeatureDao
+        SearchFeatureDao searchFeatureDao,
+        RunAsSubjectClient pluginClient
     ) {
         super(actionName, transportService, actionFilters, SuggestConfigParamRequest::new);
         this.client = client;
@@ -79,17 +81,13 @@ public abstract class BaseSuggestConfigParamTransportAction extends
         this.searchFeatureDao = searchFeatureDao;
         List<SuggestName> allSuggestParams = Arrays.asList(SuggestName.values());
         this.allSuggestParamStrs = Name.getListStrs(allSuggestParams);
+        this.pluginClient = pluginClient;
     }
 
     @Override
     protected void doExecute(Task task, SuggestConfigParamRequest request, ActionListener<SuggestConfigParamResponse> listener) {
         User user = ParseUtils.getUserContext(client);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(user, listener, () -> suggestExecute(request, user, context, listener));
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(user, listener, () -> suggestExecute(request, user, listener));
     }
 
     public void resolveUserAndExecute(User requestedUser, ActionListener<SuggestConfigParamResponse> listener, ExecutorFunction function) {
@@ -158,12 +156,7 @@ public abstract class BaseSuggestConfigParamTransportAction extends
         listener.onResponse(new SuggestConfigParamResponse.Builder().history(config.suggestHistory()).build());
     }
 
-    public abstract void suggestExecute(
-        SuggestConfigParamRequest request,
-        User user,
-        ThreadContext.StoredContext storedContext,
-        ActionListener<SuggestConfigParamResponse> listener
-    );
+    public abstract void suggestExecute(SuggestConfigParamRequest request, User user, ActionListener<SuggestConfigParamResponse> listener);
 
     /**
     *

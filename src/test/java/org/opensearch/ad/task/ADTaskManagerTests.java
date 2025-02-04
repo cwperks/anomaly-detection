@@ -141,6 +141,7 @@ import org.opensearch.timeseries.transport.StatsNodesResponse;
 import org.opensearch.timeseries.transport.StopConfigResponse;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportResponseHandler;
 import org.opensearch.transport.TransportService;
 
@@ -164,6 +165,7 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
     private ADTaskManager adTaskManager;
     private ThreadPool threadPool;
     private ADIndexJobActionHandler indexAnomalyDetectorJobActionHandler;
+    private RunAsSubjectClient pluginClient;
 
     private DateRange detectionDateRange;
     private ActionListener<JobResponse> listener;
@@ -256,6 +258,7 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
         when(client.threadPool()).thenReturn(threadPool);
         nodeStateManager = mock(NodeStateManager.class);
         taskProfileRunner = new ADTaskProfileRunner(hashRing, client);
+        pluginClient = mock(RunAsSubjectClient.class);
         adTaskManager = spy(
             new ADTaskManager(
                 settings,
@@ -278,7 +281,8 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
             adTaskManager,
             mock(ExecuteADResultResponseRecorder.class),
             nodeStateManager,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClient
         );
 
         listener = spy(new ActionListener<JobResponse>() {
@@ -1491,7 +1495,8 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
             TimeSeriesSettings.HOURLY_MAINTENANCE,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
         nodeStateManager.getConfig(detectorId, AnalysisType.AD, function, listener);
         verify(listener, times(1)).onFailure(any());

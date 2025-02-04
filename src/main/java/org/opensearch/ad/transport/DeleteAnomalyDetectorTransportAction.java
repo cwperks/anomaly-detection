@@ -29,6 +29,7 @@ import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.timeseries.AnalysisType;
 import org.opensearch.timeseries.NodeStateManager;
 import org.opensearch.timeseries.transport.BaseDeleteConfigTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class DeleteAnomalyDetectorTransportAction extends
@@ -43,7 +44,8 @@ public class DeleteAnomalyDetectorTransportAction extends
         Settings settings,
         NamedXContentRegistry xContentRegistry,
         NodeStateManager nodeStateManager,
-        ADTaskManager adTaskManager
+        ADTaskManager adTaskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -59,7 +61,8 @@ public class DeleteAnomalyDetectorTransportAction extends
             AnalysisType.AD,
             ADCommonName.DETECTION_STATE_INDEX,
             AnomalyDetector.class,
-            ADTaskType.HISTORICAL_DETECTOR_TASK_TYPES
+            ADTaskType.HISTORICAL_DETECTOR_TASK_TYPES,
+            pluginClient
         );
     }
 }

@@ -36,7 +36,6 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.CheckedConsumer;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.action.ActionResponse;
@@ -69,6 +68,7 @@ import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
 import org.opensearch.timeseries.util.ParseUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -101,6 +101,7 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
     private final String singleStreamHistoricalTaskname;
     private final String hcHistoricalTaskName;
     private final TaskProfileRunnerType taskProfileRunner;
+    private final RunAsSubjectClient pluginClient;
 
     public BaseGetConfigTransportAction(
         TransportService transportService,
@@ -121,11 +122,13 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
         String hcHistoricalTaskName,
         String singleStreamHistoricalTaskname,
         Setting<Boolean> filterByBackendRoleEnableSetting,
-        TaskProfileRunnerType taskProfileRunner
+        TaskProfileRunnerType taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(getConfigAction, transportService, actionFilters, GetConfigRequest::new);
         this.clusterService = clusterService;
         this.client = client;
+        this.pluginClient = pluginClient;
         this.clientUtil = clientUtil;
 
         List<ProfileName> allProfiles = Arrays.asList(ProfileName.values());
@@ -162,22 +165,17 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
         String configID = getConfigRequest.getConfigID();
         User user = ParseUtils.getUserContext(client);
         ActionListener<GetConfigResponseType> listener = wrapRestActionListener(actionListener, FAIL_TO_GET_CONFIG_MSG);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                configID,
-                filterByEnabled,
-                listener,
-                (config) -> getExecute(getConfigRequest, listener),
-                client,
-                clusterService,
-                xContentRegistry,
-                configTypeClass
-            );
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(
+            user,
+            configID,
+            filterByEnabled,
+            listener,
+            (config) -> getExecute(getConfigRequest, listener),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            configTypeClass
+        );
     }
 
     public void getConfigAndJob(
@@ -194,7 +192,7 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
             MultiGetRequest.Item adJobItem = new MultiGetRequest.Item(CommonName.JOB_INDEX, configID);
             multiGetRequest.add(adJobItem);
         }
-        client
+        pluginClient
             .multiGet(
                 multiGetRequest,
                 onMultiGetResponse(listener, returnJob, returnTask, realtimeConfigTask, historicalConfigTask, configID)

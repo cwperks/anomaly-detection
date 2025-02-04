@@ -40,6 +40,7 @@ import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -68,6 +69,8 @@ public class AbstractForecasterActionHandlerTestCase extends AbstractTimeSeriesT
     protected Clock clock;
     @Mock
     protected Client clientMock;
+    @Mock
+    protected RunAsSubjectClient pluginClientMock;
     @Mock
     protected ThreadPool threadPool;
     protected ThreadContext threadContext;

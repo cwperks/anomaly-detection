@@ -30,7 +30,6 @@ import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.tasks.Task;
@@ -46,6 +45,7 @@ import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.feature.FeatureManager;
 import org.opensearch.timeseries.stats.StatNames;
 import org.opensearch.timeseries.transport.ResultProcessor;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -62,6 +62,7 @@ public class AnomalyResultTransportAction extends HandledTransportAction<ActionR
     private final Set<String> hcDetectors;
     private final ADStats adStats;
     private final NodeStateManager nodeStateManager;
+    private final RunAsSubjectClient pluginClient;
 
     @Inject
     public AnomalyResultTransportAction(
@@ -79,7 +80,8 @@ public class AnomalyResultTransportAction extends HandledTransportAction<ActionR
         ADStats adStats,
         ThreadPool threadPool,
         NamedXContentRegistry xContentRegistry,
-        ADTaskManager realTimeTaskManager
+        ADTaskManager realTimeTaskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(AnomalyResultAction.NAME, transportService, actionFilters, AnomalyResultRequest::new);
         this.resultProcessor = new ADResultProcessor(
@@ -106,6 +108,7 @@ public class AnomalyResultTransportAction extends HandledTransportAction<ActionR
         this.hcDetectors = new HashSet<>();
         this.adStats = adStats;
         this.nodeStateManager = nodeStateManager;
+        this.pluginClient = pluginClient;
     }
 
     /**
@@ -160,45 +163,40 @@ public class AnomalyResultTransportAction extends HandledTransportAction<ActionR
      */
     @Override
     protected void doExecute(Task task, ActionRequest actionRequest, ActionListener<AnomalyResultResponse> listener) {
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            AnomalyResultRequest request = AnomalyResultRequest.fromActionRequest(actionRequest);
-            String adID = request.getConfigId();
-            ActionListener<AnomalyResultResponse> original = listener;
-            listener = ActionListener.wrap(r -> {
-                hcDetectors.remove(adID);
-                original.onResponse(r);
-            }, e -> {
-                // If exception is AnomalyDetectionException and it should not be counted in stats,
-                // we will not count it in failure stats.
-                if (!(e instanceof TimeSeriesException) || ((TimeSeriesException) e).isCountedInStats()) {
-                    adStats.getStat(StatNames.AD_EXECUTE_FAIL_COUNT.getName()).increment();
-                    if (hcDetectors.contains(adID)) {
-                        adStats.getStat(StatNames.AD_HC_EXECUTE_FAIL_COUNT.getName()).increment();
-                    }
+        AnomalyResultRequest request = AnomalyResultRequest.fromActionRequest(actionRequest);
+        String adID = request.getConfigId();
+        ActionListener<AnomalyResultResponse> original = listener;
+        listener = ActionListener.wrap(r -> {
+            hcDetectors.remove(adID);
+            original.onResponse(r);
+        }, e -> {
+            // If exception is AnomalyDetectionException and it should not be counted in stats,
+            // we will not count it in failure stats.
+            if (!(e instanceof TimeSeriesException) || ((TimeSeriesException) e).isCountedInStats()) {
+                adStats.getStat(StatNames.AD_EXECUTE_FAIL_COUNT.getName()).increment();
+                if (hcDetectors.contains(adID)) {
+                    adStats.getStat(StatNames.AD_HC_EXECUTE_FAIL_COUNT.getName()).increment();
                 }
-                hcDetectors.remove(adID);
-                original.onFailure(e);
-            });
-
-            if (!ADEnabledSetting.isADEnabled()) {
-                throw new EndRunException(adID, ADCommonMessages.DISABLED_ERR_MSG, true).countedInStats(false);
             }
+            hcDetectors.remove(adID);
+            original.onFailure(e);
+        });
 
-            adStats.getStat(StatNames.AD_EXECUTE_REQUEST_COUNT.getName()).increment();
+        if (!ADEnabledSetting.isADEnabled()) {
+            throw new EndRunException(adID, ADCommonMessages.DISABLED_ERR_MSG, true).countedInStats(false);
+        }
 
-            if (adCircuitBreakerService.isOpen()) {
-                listener.onFailure(new LimitExceededException(adID, CommonMessages.MEMORY_CIRCUIT_BROKEN_ERR_MSG, false));
-                return;
-            }
-            try {
-                nodeStateManager
-                    .getConfig(adID, AnalysisType.AD, resultProcessor.onGetConfig(listener, adID, request, Optional.of(hcDetectors)));
-            } catch (Exception ex) {
-                ResultProcessor.handleExecuteException(ex, listener, adID);
-            }
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
+        adStats.getStat(StatNames.AD_EXECUTE_REQUEST_COUNT.getName()).increment();
+
+        if (adCircuitBreakerService.isOpen()) {
+            listener.onFailure(new LimitExceededException(adID, CommonMessages.MEMORY_CIRCUIT_BROKEN_ERR_MSG, false));
+            return;
+        }
+        try {
+            nodeStateManager
+                .getConfig(adID, AnalysisType.AD, resultProcessor.onGetConfig(listener, adID, request, Optional.of(hcDetectors)));
+        } catch (Exception ex) {
+            ResultProcessor.handleExecuteException(ex, listener, adID);
         }
     }
 }

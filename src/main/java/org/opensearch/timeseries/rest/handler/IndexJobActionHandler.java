@@ -39,7 +39,6 @@ import org.opensearch.client.Client;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
@@ -75,6 +74,7 @@ import org.opensearch.timeseries.transport.StopConfigRequest;
 import org.opensearch.timeseries.transport.StopConfigResponse;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 import com.google.common.base.Throwables;
@@ -97,6 +97,7 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
     private final String stateIndex;
     private final ActionType<StopConfigResponse> stopConfigAction;
     protected final NodeStateManager nodeStateManager;
+    private final RunAsSubjectClient pluginClient;
 
     /**
      * Constructor function.
@@ -126,7 +127,8 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
         ActionType<StopConfigResponse> stopConfigAction,
         NodeStateManager nodeStateManager,
         Settings settings,
-        Setting<TimeValue> timeoutSetting
+        Setting<TimeValue> timeoutSetting,
+        RunAsSubjectClient pluginClient
     ) {
         this.client = client;
         this.indexManagement = indexManagement;
@@ -139,6 +141,7 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
         this.stopConfigAction = stopConfigAction;
         this.nodeStateManager = nodeStateManager;
         this.requestTimeout = timeoutSetting.get(settings);
+        this.pluginClient = pluginClient;
     }
 
     /**
@@ -234,7 +237,7 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
     private void getJobForWrite(Config config, Job job, TransportService transportService, ActionListener<JobResponse> listener) {
         GetRequest getRequest = new GetRequest(CommonName.JOB_INDEX).id(config.getId());
 
-        client
+        pluginClient
             .get(
                 getRequest,
                 ActionListener
@@ -365,7 +368,7 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
             .source(job.toXContent(XContentFactory.jsonBuilder(), RestHandlerUtils.XCONTENT_WITH_TYPE))
             .timeout(requestTimeout)
             .id(job.getName());
-        client
+        pluginClient
             .index(
                 indexRequest,
                 ActionListener
@@ -408,7 +411,7 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
     public void stopJob(String configId, TransportService transportService, ActionListener<JobResponse> listener) {
         GetRequest getRequest = new GetRequest(CommonName.JOB_INDEX).id(configId);
 
-        client.get(getRequest, ActionListener.wrap(response -> {
+        pluginClient.get(getRequest, ActionListener.wrap(response -> {
             if (response.isExists()) {
                 try (XContentParser parser = createXContentParserFromRegistry(xContentRegistry, response.getSourceAsBytesRef())) {
                     ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
@@ -510,7 +513,6 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
      * @param dateRange historical analysis date range
      * @param user user
      * @param transportService transport service
-     * @param context thread context
      * @param listener action listener
      */
     public void startConfig(
@@ -518,7 +520,6 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
         DateRange dateRange,
         User user,
         TransportService transportService,
-        ThreadContext.StoredContext context,
         ActionListener<JobResponse> listener
     ) {
         // upgrade index mapping
@@ -540,7 +541,6 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
                 startRealtimeOrHistoricalAnalysis(dateRange, user, transportService, listener, config);
                 return;
             }
-            context.restore();
             indexManagement
                 .initCustomResultIndexAndExecute(
                     resultIndex,
@@ -568,17 +568,12 @@ public abstract class IndexJobActionHandler<IndexType extends Enum<IndexType> & 
         ActionListener<JobResponse> listener,
         Optional<? extends Config> config
     ) {
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            if (dateRange == null) {
-                // start realtime job
-                startJob(config.get(), transportService, listener);
-            } else {
-                // start historical analysis task
-                taskManager.startHistorical(config.get(), dateRange, user, transportService, listener);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to stash context", e);
-            listener.onFailure(e);
+        if (dateRange == null) {
+            // start realtime job
+            startJob(config.get(), transportService, listener);
+        } else {
+            // start historical analysis task
+            taskManager.startHistorical(config.get(), dateRange, user, transportService, listener);
         }
     }
 

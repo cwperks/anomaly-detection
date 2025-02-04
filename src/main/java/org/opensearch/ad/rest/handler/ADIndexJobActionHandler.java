@@ -36,6 +36,7 @@ import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.rest.handler.IndexJobActionHandler;
 import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.transport.ResultRequest;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ADIndexJobActionHandler extends
@@ -48,7 +49,8 @@ public class ADIndexJobActionHandler extends
         ADTaskManager adTaskManager,
         ExecuteADResultResponseRecorder recorder,
         NodeStateManager nodeStateManager,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             client,
@@ -62,7 +64,8 @@ public class ADIndexJobActionHandler extends
             StopDetectorAction.INSTANCE,
             nodeStateManager,
             settings,
-            AD_REQUEST_TIMEOUT
+            AD_REQUEST_TIMEOUT,
+            pluginClient
         );
     }
 

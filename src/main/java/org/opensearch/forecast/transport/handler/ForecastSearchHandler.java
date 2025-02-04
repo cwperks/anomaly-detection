@@ -16,13 +16,14 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.forecast.settings.ForecastSettings;
 import org.opensearch.timeseries.transport.handler.SearchHandler;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 /**
  * Handle general search request, check user role and return search response.
  */
 public class ForecastSearchHandler extends SearchHandler {
 
-    public ForecastSearchHandler(Settings settings, ClusterService clusterService, Client client) {
-        super(settings, clusterService, client, ForecastSettings.FORECAST_FILTER_BY_BACKEND_ROLES);
+    public ForecastSearchHandler(Settings settings, ClusterService clusterService, Client client, RunAsSubjectClient pluginClient) {
+        super(settings, clusterService, client, ForecastSettings.FORECAST_FILTER_BY_BACKEND_ROLES, pluginClient);
     }
 }

@@ -54,6 +54,7 @@ import org.opensearch.timeseries.common.exception.TimeSeriesException;
 import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.IndexUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 import com.google.common.collect.ImmutableList;
 
@@ -88,7 +89,8 @@ public class AnomalyResultBulkIndexHandlerTests extends ADUnitTestCase {
             indexUtils,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            mock(RunAsSubjectClient.class)
         );
         listener = spy(new ActionListener<BulkResponse>() {
             @Override

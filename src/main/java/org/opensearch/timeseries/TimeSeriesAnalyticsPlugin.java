@@ -261,6 +261,7 @@ import org.opensearch.forecast.transport.ValidateForecasterAction;
 import org.opensearch.forecast.transport.ValidateForecasterTransportAction;
 import org.opensearch.forecast.transport.handler.ForecastIndexMemoryPressureAwareResultHandler;
 import org.opensearch.forecast.transport.handler.ForecastSearchHandler;
+import org.opensearch.identity.PluginSubject;
 import org.opensearch.indices.SystemIndexDescriptor;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -268,6 +269,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.monitor.jvm.JvmInfo;
 import org.opensearch.monitor.jvm.JvmService;
 import org.opensearch.plugins.ActionPlugin;
+import org.opensearch.plugins.IdentityAwarePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.ScriptPlugin;
 import org.opensearch.plugins.SystemIndexPlugin;
@@ -304,6 +306,7 @@ import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
 import org.opensearch.timeseries.util.IndexUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.watcher.ResourceWatcherService;
 
@@ -327,7 +330,13 @@ import io.protostuff.runtime.RuntimeSchema;
 /**
  * Entry point of time series analytics plugin.
  */
-public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, ScriptPlugin, SystemIndexPlugin, JobSchedulerExtension {
+public class TimeSeriesAnalyticsPlugin extends Plugin
+    implements
+        ActionPlugin,
+        ScriptPlugin,
+        SystemIndexPlugin,
+        JobSchedulerExtension,
+        IdentityAwarePlugin {
 
     private static final Logger LOG = LogManager.getLogger(TimeSeriesAnalyticsPlugin.class);
 
@@ -371,6 +380,7 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
     private ExecuteForecastResultResponseRecorder forecastResultResponseRecorder;
     private ADIndexJobActionHandler adIndexJobActionHandler;
     private ForecastIndexJobActionHandler forecastIndexJobActionHandler;
+    private RunAsSubjectClient pluginClient;
 
     static {
         SpecialPermission.check();
@@ -497,6 +507,7 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
         // Common components
         // =====================
         this.client = client;
+        this.pluginClient = new RunAsSubjectClient(client);
         this.threadPool = threadPool;
         Settings settings = environment.settings();
         this.clientUtil = new ClientUtil(client);
@@ -547,7 +558,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
             TimeSeriesSettings.HOURLY_MAINTENANCE,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
         securityClientUtil = new SecurityClientUtil(stateManager, settings);
 
@@ -905,10 +917,11 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
                 this.indexUtils,
                 clusterService,
                 AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-                AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+                AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+                pluginClient
             );
 
-        ADSearchHandler adSearchHandler = new ADSearchHandler(settings, clusterService, client);
+        ADSearchHandler adSearchHandler = new ADSearchHandler(settings, clusterService, client, pluginClient);
 
         ResultBulkIndexingHandler<AnomalyResult, ADIndex, ADIndexManagement> anomalyResultHandler = new ResultBulkIndexingHandler<>(
             client,
@@ -920,7 +933,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
             this.indexUtils,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
 
         // =====================
@@ -980,7 +994,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
             adTaskManager,
             adResultResponseRecorder,
             stateManager,
-            settings
+            settings,
+            pluginClient
         );
 
         // =====================
@@ -1303,10 +1318,11 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
                 this.indexUtils,
                 clusterService,
                 ForecastSettings.FORECAST_BACKOFF_INITIAL_DELAY,
-                ForecastSettings.FORECAST_MAX_RETRY_FOR_BACKOFF
+                ForecastSettings.FORECAST_MAX_RETRY_FOR_BACKOFF,
+                pluginClient
             );
 
-        ForecastSearchHandler forecastSearchHandler = new ForecastSearchHandler(settings, clusterService, client);
+        ForecastSearchHandler forecastSearchHandler = new ForecastSearchHandler(settings, clusterService, client, pluginClient);
 
         forecastResultResponseRecorder = new ExecuteForecastResultResponseRecorder(
             forecastIndices,
@@ -1327,7 +1343,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
             forecastTaskManager,
             forecastResultResponseRecorder,
             stateManager,
-            settings
+            settings,
+            pluginClient
         );
 
         // return objects used by Guice to inject dependencies for e.g.,
@@ -1353,7 +1370,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
                     nodeFilter,
                     AnomalyDetectorSettings.AD_CHECKPOINT_TTL,
                     ForecastSettings.FORECAST_CHECKPOINT_TTL,
-                    settings
+                    settings,
+                    pluginClient
                 ),
                 nodeFilter,
                 // AD components
@@ -1398,8 +1416,16 @@ public class TimeSeriesAnalyticsPlugin extends Plugin implements ActionPlugin, S
                 forecastTaskCacheManager,
                 forecastSaveResultStrategy,
                 new ForecastTaskProfileRunner(),
-                forecastInferencer
+                forecastInferencer,
+                pluginClient
             );
+    }
+
+    @Override
+    public void assignSubject(PluginSubject pluginSubject) {
+        if (this.pluginClient != null) {
+            this.pluginClient.setSubject(pluginSubject);
+        }
     }
 
     /**

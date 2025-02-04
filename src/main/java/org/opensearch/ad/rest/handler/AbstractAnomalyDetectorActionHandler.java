@@ -52,6 +52,7 @@ import org.opensearch.timeseries.model.ValidationAspect;
 import org.opensearch.timeseries.model.ValidationIssueType;
 import org.opensearch.timeseries.rest.handler.AbstractTimeSeriesActionHandler;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -151,7 +152,8 @@ public abstract class AbstractAnomalyDetectorActionHandler<T extends ActionRespo
         String validationType,
         boolean isDryRun,
         Clock clock,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             anomalyDetector,
@@ -181,7 +183,8 @@ public abstract class AbstractAnomalyDetectorActionHandler<T extends ActionRespo
             maxHCAnomalyDetectors,
             clock,
             settings,
-            ValidationAspect.DETECTOR
+            ValidationAspect.DETECTOR,
+            pluginClient
         );
 
     }

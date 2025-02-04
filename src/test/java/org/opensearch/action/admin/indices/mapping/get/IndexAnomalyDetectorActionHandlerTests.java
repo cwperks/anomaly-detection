@@ -57,6 +57,7 @@ import org.opensearch.common.unit.TimeValue;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.rest.RestStatus;
+import org.opensearch.identity.noop.NoopSubject;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.threadpool.TestThreadPool;
 import org.opensearch.threadpool.ThreadPool;
@@ -67,6 +68,7 @@ import org.opensearch.timeseries.common.exception.ValidationException;
 import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -102,6 +104,7 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
     private ADTaskManager adTaskManager;
     private SearchFeatureDao searchFeatureDao;
     private ClusterName clusterName;
+    private RunAsSubjectClient pluginClientMock;
 
     @BeforeClass
     public static void beforeClass() {
@@ -127,6 +130,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
         when(clusterService.state()).thenReturn(clusterState);
 
         clientMock = spy(new NodeClient(settings, threadPool));
+        pluginClientMock = spy(new RunAsSubjectClient(clientMock));
+        pluginClientMock.setSubject(new NoopSubject());
         NodeStateManager nodeStateManager = mock(NodeStateManager.class);
         clientUtil = new SecurityClientUtil(nodeStateManager, settings);
         transportService = mock(TransportService.class);
@@ -184,7 +189,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
     }
 
@@ -235,7 +241,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -316,7 +323,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -405,7 +413,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -508,7 +517,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -632,7 +642,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -724,7 +735,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -811,7 +823,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
 
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
@@ -913,7 +926,8 @@ public class IndexAnomalyDetectorActionHandlerTests extends AbstractTimeSeriesTe
             null,
             adTaskManager,
             searchFeatureDao,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {

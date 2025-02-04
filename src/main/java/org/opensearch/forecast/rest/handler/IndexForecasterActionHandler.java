@@ -24,6 +24,7 @@ import org.opensearch.forecast.task.ForecastTaskManager;
 import org.opensearch.forecast.transport.IndexForecasterResponse;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -74,7 +75,8 @@ public class IndexForecasterActionHandler extends AbstractForecasterActionHandle
         User user,
         ForecastTaskManager taskManager,
         SearchFeatureDao searchFeatureDao,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             clusterService,
@@ -100,7 +102,8 @@ public class IndexForecasterActionHandler extends AbstractForecasterActionHandle
             null,
             false,
             null,
-            settings
+            settings,
+            pluginClient
         );
     }
 }

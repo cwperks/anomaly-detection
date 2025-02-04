@@ -49,7 +49,6 @@ import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.timeseries.AbstractTimeSeriesTest;
@@ -62,6 +61,7 @@ import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 import com.google.common.collect.ImmutableList;
@@ -73,7 +73,6 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
 
     private NodeStateManager nodeStateManager;
     private Client client;
-    private ThreadContext.StoredContext context;
     private DateRange detectionDateRange;
     private TransportService transportService;
     private ADIndexJobActionHandler handler;
@@ -84,6 +83,7 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
     private ADTaskProfileRunner taskProfileRunner;
     private DiscoveryNode node1;
     private ActionListener<JobResponse> listener;
+    private RunAsSubjectClient pluginClient;
 
     @BeforeClass
     public static void setOnce() throws IOException {
@@ -105,6 +105,7 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
     public void setUp() throws Exception {
         super.setUp();
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         when(client.threadPool()).thenReturn(threadPool);
 
         node1 = createDiscoverynode("node1");
@@ -121,7 +122,7 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
         nodestateSetting.add(MAX_RUNNING_ENTITIES_PER_DETECTOR_FOR_HISTORICAL_ANALYSIS);
 
         ClusterService clusterService = createClusterServiceForNode(threadPool, node1, nodestateSetting);
-        nodeStateManager = createNodeStateManager(client, mock(ClientUtil.class), threadPool, clusterService);
+        nodeStateManager = createNodeStateManager(client, mock(ClientUtil.class), threadPool, clusterService, pluginClient);
         Instant now = Instant.now();
         Instant startTime = now.minus(10, ChronoUnit.DAYS);
         Instant endTime = now.minus(1, ChronoUnit.DAYS);
@@ -133,8 +134,6 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
             .put(BATCH_TASK_PIECE_INTERVAL_SECONDS.getKey(), 1)
             .put(AD_REQUEST_TIMEOUT.getKey(), TimeValue.timeValueSeconds(10))
             .build();
-        ThreadContext threadContext = new ThreadContext(settings);
-        context = threadContext.stashContext();
         transportService = mock(TransportService.class);
 
         anomalyDetectionIndices = mock(ADIndexManagement.class);
@@ -189,7 +188,8 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
             adTaskManager,
             recorder,
             nodeStateManager,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClient
         );
 
         listener = spy(new ActionListener<JobResponse>() {
@@ -210,7 +210,7 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
         );
         setupGetDetector(detector, client);
 
-        handler.startConfig(detector.getId(), detectionDateRange, randomUser(), transportService, context, listener);
+        handler.startConfig(detector.getId(), detectionDateRange, randomUser(), transportService, listener);
         verify(listener, times(1)).onFailure(exceptionCaptor.capture());
     }
 
@@ -227,7 +227,7 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
         setupGetDetector(detector, client);
         setupHashRingWithOwningNode();
 
-        handler.startConfig(detector.getId(), detectionDateRange, randomUser(), transportService, context, listener);
+        handler.startConfig(detector.getId(), detectionDateRange, randomUser(), transportService, listener);
         verify(adTaskManager, times(1)).forwardRequestToLeadNode(any(), any(), any());
     }
 }

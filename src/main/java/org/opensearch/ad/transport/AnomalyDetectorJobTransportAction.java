@@ -33,6 +33,7 @@ import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.timeseries.transport.BaseJobTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class AnomalyDetectorJobTransportAction extends
@@ -45,7 +46,8 @@ public class AnomalyDetectorJobTransportAction extends
         ClusterService clusterService,
         Settings settings,
         NamedXContentRegistry xContentRegistry,
-        ADIndexJobActionHandler adIndexJobActionHandler
+        ADIndexJobActionHandler adIndexJobActionHandler,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -60,7 +62,8 @@ public class AnomalyDetectorJobTransportAction extends
             FAIL_TO_START_DETECTOR,
             FAIL_TO_STOP_DETECTOR,
             AnomalyDetector.class,
-            adIndexJobActionHandler
+            adIndexJobActionHandler,
+            pluginClient
         );
     }
 }

@@ -38,6 +38,7 @@ import org.opensearch.timeseries.model.IndexableResult;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.IndexUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 /**
  *
@@ -59,7 +60,8 @@ public class ResultBulkIndexingHandler<ResultType extends IndexableResult, Index
         IndexUtils indexUtils,
         ClusterService clusterService,
         Setting<TimeValue> backOffDelaySetting,
-        Setting<Integer> maxRetrySetting
+        Setting<Integer> maxRetrySetting,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             client,
@@ -71,7 +73,8 @@ public class ResultBulkIndexingHandler<ResultType extends IndexableResult, Index
             indexUtils,
             clusterService,
             backOffDelaySetting,
-            maxRetrySetting
+            maxRetrySetting,
+            pluginClient
         );
     }
 

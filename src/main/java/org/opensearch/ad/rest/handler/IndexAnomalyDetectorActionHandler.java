@@ -24,6 +24,7 @@ import org.opensearch.commons.authuser.User;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -80,7 +81,8 @@ public class IndexAnomalyDetectorActionHandler extends AbstractAnomalyDetectorAc
         User user,
         ADTaskManager adTaskManager,
         SearchFeatureDao searchFeatureDao,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             clusterService,
@@ -106,7 +108,8 @@ public class IndexAnomalyDetectorActionHandler extends AbstractAnomalyDetectorAc
             null,
             false,
             null,
-            settings
+            settings,
+            pluginClient
         );
     }
 }

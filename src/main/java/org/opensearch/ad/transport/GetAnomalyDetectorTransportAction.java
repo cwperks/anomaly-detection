@@ -41,6 +41,7 @@ import org.opensearch.timeseries.model.Job;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.transport.BaseGetConfigTransportAction;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -60,7 +61,8 @@ public class GetAnomalyDetectorTransportAction extends
         Settings settings,
         NamedXContentRegistry xContentRegistry,
         ADTaskManager adTaskManager,
-        ADTaskProfileRunner adTaskProfileRunner
+        ADTaskProfileRunner adTaskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -81,7 +83,8 @@ public class GetAnomalyDetectorTransportAction extends
             ADTaskType.HISTORICAL_HC_DETECTOR.name(),
             ADTaskType.HISTORICAL_SINGLE_ENTITY.name(),
             AnomalyDetectorSettings.AD_FILTER_BY_BACKEND_ROLES,
-            adTaskProfileRunner
+            adTaskProfileRunner,
+            pluginClient
         );
     }
 

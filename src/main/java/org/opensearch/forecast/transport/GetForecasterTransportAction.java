@@ -38,6 +38,7 @@ import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.BaseGetConfigTransportAction;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -55,7 +56,8 @@ public class GetForecasterTransportAction extends
         Settings settings,
         NamedXContentRegistry xContentRegistry,
         ForecastTaskManager forecastTaskManager,
-        ForecastTaskProfileRunner taskProfileRunner
+        ForecastTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -76,7 +78,8 @@ public class GetForecasterTransportAction extends
             ForecastTaskType.RUN_ONCE_FORECAST_HC_FORECASTER.name(),
             ForecastTaskType.RUN_ONCE_FORECAST_SINGLE_STREAM.name(),
             ForecastSettings.FORECAST_FILTER_BY_BACKEND_ROLES,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
     }
 

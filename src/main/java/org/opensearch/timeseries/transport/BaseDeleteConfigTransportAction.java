@@ -29,7 +29,6 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
@@ -51,6 +50,7 @@ import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.util.ParseUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType extends TaskCacheManager, TaskTypeEnum extends TaskType, TaskClass extends TimeSeriesTask, IndexType extends Enum<IndexType> & TimeSeriesIndex, IndexManagementType extends IndexManagement<IndexType>, TaskManagerType extends TaskManager<TaskCacheManagerType, TaskTypeEnum, TaskClass, IndexType, IndexManagementType>, ConfigType extends Config>
@@ -69,6 +69,7 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
     private final String stateIndex;
     private final Class<ConfigType> configTypeClass;
     private final List<TaskTypeEnum> batchTaskTypes;
+    private final RunAsSubjectClient pluginClient;
 
     public BaseDeleteConfigTransportAction(
         TransportService transportService,
@@ -84,7 +85,8 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
         AnalysisType analysisType,
         String stateIndex,
         Class<ConfigType> configTypeClass,
-        List<TaskTypeEnum> historicalTaskTypes
+        List<TaskTypeEnum> historicalTaskTypes,
+        RunAsSubjectClient pluginClient
     ) {
         super(deleteConfigAction, transportService, actionFilters, DeleteConfigRequest::new);
         this.transportService = transportService;
@@ -100,6 +102,7 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
         this.stateIndex = stateIndex;
         this.configTypeClass = configTypeClass;
         this.batchTaskTypes = historicalTaskTypes;
+        this.pluginClient = pluginClient;
     }
 
     @Override
@@ -109,52 +112,47 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
         User user = ParseUtils.getUserContext(client);
         ActionListener<DeleteResponse> listener = wrapRestActionListener(actionListener, FAIL_TO_DELETE_CONFIG);
         // By the time request reaches here, the user permissions are validated by Security plugin.
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                configId,
-                filterByEnabled,
-                listener,
-                (input) -> nodeStateManager.getConfig(configId, analysisType, config -> {
-                    if (config.isEmpty()) {
-                        // In a mixed cluster, if delete detector request routes to node running AD1.0, then it will
-                        // not delete detector tasks. User can re-delete these deleted detector after cluster upgraded,
-                        // in that case, the detector is not present.
-                        LOG.info("Can't find config {}", configId);
-                        taskManager.deleteTasks(configId, () -> deleteJobDoc(configId, listener), listener);
-                        return;
-                    }
-                    // Check if there is realtime job or batch analysis task running. If none of these running, we
-                    // can delete the config.
-                    getJob(configId, listener, () -> {
-                        taskManager.getAndExecuteOnLatestConfigLevelTask(configId, batchTaskTypes, configTask -> {
-                            if (configTask.isPresent() && !configTask.get().isDone()) {
-                                String batchTaskName = configTask.get() instanceof ADTask ? "Historical" : "Run once";
-                                listener.onFailure(new OpenSearchStatusException(batchTaskName + " is running", RestStatus.BAD_REQUEST));
-                            } else {
-                                taskManager.deleteTasks(configId, () -> deleteJobDoc(configId, listener), listener);
-                            }
-                            // false means don't reset task state as inactive/stopped state. We are checking if task has finished or not.
-                            // So no need to reset task state.
-                        }, transportService, false, listener);
-                    });
-                }, listener),
-                client,
-                clusterService,
-                xContentRegistry,
-                configTypeClass
-            );
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(
+            user,
+            configId,
+            filterByEnabled,
+            listener,
+            (input) -> nodeStateManager.getConfig(configId, analysisType, config -> {
+                if (config.isEmpty()) {
+                    // In a mixed cluster, if delete detector request routes to node running AD1.0, then it will
+                    // not delete detector tasks. User can re-delete these deleted detector after cluster upgraded,
+                    // in that case, the detector is not present.
+                    LOG.info("Can't find config {}", configId);
+                    taskManager.deleteTasks(configId, () -> deleteJobDoc(configId, listener), listener);
+                    return;
+                }
+                // Check if there is realtime job or batch analysis task running. If none of these running, we
+                // can delete the config.
+                getJob(configId, listener, () -> {
+                    taskManager.getAndExecuteOnLatestConfigLevelTask(configId, batchTaskTypes, configTask -> {
+                        if (configTask.isPresent() && !configTask.get().isDone()) {
+                            String batchTaskName = configTask.get() instanceof ADTask ? "Historical" : "Run once";
+                            listener.onFailure(new OpenSearchStatusException(batchTaskName + " is running", RestStatus.BAD_REQUEST));
+                        } else {
+                            taskManager.deleteTasks(configId, () -> deleteJobDoc(configId, listener), listener);
+                        }
+                        // false means don't reset task state as inactive/stopped state. We are checking if task has finished or not.
+                        // So no need to reset task state.
+                    }, transportService, false, listener);
+                });
+            }, listener),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            configTypeClass
+        );
     }
 
     private void deleteJobDoc(String configId, ActionListener<DeleteResponse> listener) {
         LOG.info("Delete job {}", configId);
         DeleteRequest deleteRequest = new DeleteRequest(CommonName.JOB_INDEX, configId)
             .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        client.delete(deleteRequest, ActionListener.wrap(response -> {
+        pluginClient.delete(deleteRequest, ActionListener.wrap(response -> {
             if (response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND) {
                 deleteStateDoc(configId, listener);
             } else {
@@ -176,7 +174,7 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
     private void deleteStateDoc(String configId, ActionListener<DeleteResponse> listener) {
         LOG.info("Delete config state {}", configId);
         DeleteRequest deleteRequest = new DeleteRequest(stateIndex, configId);
-        client.delete(deleteRequest, ActionListener.wrap(response -> {
+        pluginClient.delete(deleteRequest, ActionListener.wrap(response -> {
             // whether deleted state doc or not, continue as state doc may not exist
             deleteConfigDoc(configId, listener);
         }, exception -> {
@@ -193,7 +191,7 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
         LOG.info("Delete config {}", configId);
         DeleteRequest deleteRequest = new DeleteRequest(CommonName.CONFIG_INDEX, configId)
             .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        client.delete(deleteRequest, new ActionListener<DeleteResponse>() {
+        pluginClient.delete(deleteRequest, new ActionListener<DeleteResponse>() {
             @Override
             public void onResponse(DeleteResponse deleteResponse) {
                 listener.onResponse(deleteResponse);
@@ -209,7 +207,7 @@ public abstract class BaseDeleteConfigTransportAction<TaskCacheManagerType exten
     private void getJob(String configId, ActionListener<DeleteResponse> listener, ExecutorFunction function) {
         if (clusterService.state().metadata().indices().containsKey(CommonName.JOB_INDEX)) {
             GetRequest request = new GetRequest(CommonName.JOB_INDEX).id(configId);
-            client.get(request, ActionListener.wrap(response -> onGetJobResponseForWrite(response, listener, function), exception -> {
+            pluginClient.get(request, ActionListener.wrap(response -> onGetJobResponseForWrite(response, listener, function), exception -> {
                 LOG.error("Fail to get job: " + configId, exception);
                 listener.onFailure(exception);
             }));

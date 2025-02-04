@@ -45,6 +45,7 @@ import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.TestHelpers;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.IndexUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public abstract class AbstractIndexHandlerTest extends AbstractTimeSeriesTest {
     enum IndexCreation {
@@ -62,6 +63,9 @@ public abstract class AbstractIndexHandlerTest extends AbstractTimeSeriesTest {
 
     @Mock
     protected Client client;
+
+    @Mock
+    protected RunAsSubjectClient pluginClient;
 
     @Mock
     protected ADIndexManagement anomalyDetectionIndices;

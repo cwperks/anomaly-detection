@@ -19,7 +19,6 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -41,6 +40,7 @@ import org.opensearch.timeseries.model.ValidationAspect;
 import org.opensearch.timeseries.model.ValidationIssueType;
 import org.opensearch.timeseries.rest.handler.Processor;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -58,6 +58,7 @@ public abstract class BaseValidateConfigTransportAction<IndexType extends Enum<I
     protected Clock clock;
     protected Settings settings;
     protected ValidationAspect validationAspect;
+    protected final RunAsSubjectClient pluginClient;
 
     public BaseValidateConfigTransportAction(
         String actionName,
@@ -71,7 +72,8 @@ public abstract class BaseValidateConfigTransportAction<IndexType extends Enum<I
         TransportService transportService,
         SearchFeatureDao searchFeatureDao,
         Setting<Boolean> filterByBackendRoleSetting,
-        ValidationAspect validationAspect
+        ValidationAspect validationAspect,
+        RunAsSubjectClient pluginClient
     ) {
         super(actionName, transportService, actionFilters, ValidateConfigRequest::new);
         this.client = client;
@@ -85,17 +87,13 @@ public abstract class BaseValidateConfigTransportAction<IndexType extends Enum<I
         this.clock = Clock.systemUTC();
         this.settings = settings;
         this.validationAspect = validationAspect;
+        this.pluginClient = pluginClient;
     }
 
     @Override
     protected void doExecute(Task task, ValidateConfigRequest request, ActionListener<ValidateConfigResponse> listener) {
         User user = ParseUtils.getUserContext(client);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(user, listener, () -> validateExecute(request, user, context, listener));
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(user, listener, () -> validateExecute(request, user, listener));
     }
 
     public void resolveUserAndExecute(User requestedUser, ActionListener<ValidateConfigResponse> listener, ExecutorFunction function) {
@@ -193,13 +191,7 @@ public abstract class BaseValidateConfigTransportAction<IndexType extends Enum<I
         return new ConfigValidationIssue(exception.getAspect(), exception.getType(), errorMessage, subIssues, intervalSuggestion);
     }
 
-    public void validateExecute(
-        ValidateConfigRequest request,
-        User user,
-        ThreadContext.StoredContext storedContext,
-        ActionListener<ValidateConfigResponse> listener
-    ) {
-        storedContext.restore();
+    public void validateExecute(ValidateConfigRequest request, User user, ActionListener<ValidateConfigResponse> listener) {
         Config config = request.getConfig();
         ActionListener<ValidateConfigResponse> validateListener = ActionListener.wrap(response -> {
             // forcing response to be empty

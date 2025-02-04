@@ -89,6 +89,7 @@ import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.model.Job;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.ClientUtil;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportInterceptor;
 import org.opensearch.transport.TransportService;
 
@@ -587,7 +588,8 @@ public class AbstractTimeSeriesTest extends OpenSearchTestCase {
         Client client,
         ClientUtil clientUtil,
         ThreadPool threadPool,
-        ClusterService clusterService
+        ClusterService clusterService,
+        RunAsSubjectClient pluginClient
     ) {
         return new NodeStateManager(
             client,
@@ -598,7 +600,8 @@ public class AbstractTimeSeriesTest extends OpenSearchTestCase {
             TimeSeriesSettings.HOURLY_MAINTENANCE,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
     }
 }

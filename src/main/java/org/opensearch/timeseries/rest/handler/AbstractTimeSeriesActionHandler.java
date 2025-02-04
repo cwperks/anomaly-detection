@@ -42,7 +42,6 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.commons.authuser.User;
@@ -154,6 +153,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
     protected final Settings settings;
     protected final ValidationAspect configValidationAspect;
     protected boolean breakingUIChange;
+    protected final RunAsSubjectClient pluginClient;
 
     public AbstractTimeSeriesActionHandler(
         Config config,
@@ -183,7 +183,8 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
         Integer maxHCConfigs,
         Clock clock,
         Settings settings,
-        ValidationAspect configValidationAspect
+        ValidationAspect configValidationAspect,
+        RunAsSubjectClient pluginClient
     ) {
         this.config = config;
         this.timeSeriesIndices = timeSeriesIndices;
@@ -213,6 +214,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
         this.handler = new ConfigUpdateConfirmer<>(taskManager, transportService);
         this.configValidationAspect = configValidationAspect;
         this.breakingUIChange = false;
+        this.pluginClient = pluginClient;
     }
 
     /**
@@ -267,7 +269,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
     // if isDryRun is true then this method is being executed through Validation API meaning actual
     // index won't be created, only validation checks will be executed throughout the class
     private void createOrUpdateConfig(ActionListener<T> listener) {
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
+        try {
             if (!timeSeriesIndices.doesConfigIndexExist() && !this.isDryRun) {
                 logger.info("Config Indices do not exist");
                 timeSeriesIndices
@@ -282,7 +284,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
                 logger.info("DryRun variable " + this.isDryRun);
                 validateName(this.isDryRun, listener);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to create or update forecaster " + id, e);
             listener.onFailure(e);
         }

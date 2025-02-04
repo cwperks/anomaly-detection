@@ -49,6 +49,7 @@ import org.opensearch.timeseries.common.exception.TimeSeriesException;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.function.ExecutorFunction;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -64,6 +65,7 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
     private volatile Boolean filterByEnabled;
     private final SearchFeatureDao searchFeatureDao;
     private final Settings settings;
+    private final RunAsSubjectClient pluginClient;
 
     @Inject
     public IndexAnomalyDetectorTransportAction(
@@ -76,7 +78,8 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
         ADIndexManagement anomalyDetectionIndices,
         NamedXContentRegistry xContentRegistry,
         ADTaskManager adTaskManager,
-        SearchFeatureDao searchFeatureDao
+        SearchFeatureDao searchFeatureDao,
+        RunAsSubjectClient pluginClient
     ) {
         super(IndexAnomalyDetectorAction.NAME, transportService, actionFilters, IndexAnomalyDetectorRequest::new);
         this.client = client;
@@ -90,6 +93,7 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
         filterByEnabled = AnomalyDetectorSettings.AD_FILTER_BY_BACKEND_ROLES.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(AD_FILTER_BY_BACKEND_ROLES, it -> filterByEnabled = it);
         this.settings = settings;
+        this.pluginClient = pluginClient;
     }
 
     @Override
@@ -99,12 +103,8 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
         RestRequest.Method method = request.getMethod();
         String errorMessage = method == RestRequest.Method.PUT ? FAIL_TO_UPDATE_DETECTOR : FAIL_TO_CREATE_DETECTOR;
         ActionListener<IndexAnomalyDetectorResponse> listener = wrapRestActionListener(actionListener, errorMessage);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(user, detectorId, method, listener, (detector) -> adExecute(request, user, detector, context, listener));
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
-        }
+        ThreadContext.StoredContext context = client.threadPool().getThreadContext().newStoredContext(false);
+        resolveUserAndExecute(user, detectorId, method, listener, (detector) -> adExecute(request, user, detector, context, listener));
     }
 
     private void resolveUserAndExecute(
@@ -136,7 +136,7 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
                     detectorId,
                     listener,
                     function,
-                    client,
+                    pluginClient,
                     clusterService,
                     xContentRegistry,
                     filterByBackendRole,
@@ -197,7 +197,8 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
                 detectorUser,
                 adTaskManager,
                 searchFeatureDao,
-                settings
+                settings,
+                pluginClient
             );
             indexAnomalyDetectorActionHandler.start(listener);
         }, listener);
@@ -211,7 +212,7 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
         SearchRequest searchRequest = new SearchRequest()
             .indices(indices.toArray(new String[0]))
             .source(new SearchSourceBuilder().size(1).query(QueryBuilders.matchAllQuery()));
-        client.search(searchRequest, ActionListener.wrap(r -> { function.execute(); }, e -> {
+        pluginClient.search(searchRequest, ActionListener.wrap(r -> { function.execute(); }, e -> {
             // Due to below issue with security plugin, we get security_exception when invalid index name is mentioned.
             // https://github.com/opendistro-for-elasticsearch/security/issues/718
             LOG.error(e);

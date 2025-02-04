@@ -50,6 +50,7 @@ import org.opensearch.timeseries.model.ValidationIssueType;
 import org.opensearch.timeseries.rest.handler.AbstractTimeSeriesActionHandler;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -166,7 +167,8 @@ public abstract class AbstractForecasterActionHandler<T extends ActionResponse> 
         String validationType,
         boolean isDryRun,
         Clock clock,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             forecaster,
@@ -196,7 +198,8 @@ public abstract class AbstractForecasterActionHandler<T extends ActionResponse> 
             maxHCForecasters,
             clock,
             settings,
-            ValidationAspect.FORECASTER
+            ValidationAspect.FORECASTER,
+            pluginClient
         );
     }
 

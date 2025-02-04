@@ -16,6 +16,7 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.timeseries.transport.BaseSearchConfigInfoTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class SearchAnomalyDetectorInfoTransportAction extends BaseSearchConfigInfoTransportAction {
@@ -25,8 +26,9 @@ public class SearchAnomalyDetectorInfoTransportAction extends BaseSearchConfigIn
         TransportService transportService,
         ActionFilters actionFilters,
         Client client,
-        ClusterService clusterService
+        ClusterService clusterService,
+        RunAsSubjectClient pluginClient
     ) {
-        super(transportService, actionFilters, client, SearchAnomalyDetectorInfoAction.NAME);
+        super(transportService, actionFilters, client, SearchAnomalyDetectorInfoAction.NAME, pluginClient);
     }
 }

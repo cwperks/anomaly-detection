@@ -62,6 +62,7 @@ import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.transport.ProfileResponse;
 import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 import com.google.common.collect.ImmutableList;
@@ -81,6 +82,7 @@ public class IndexAnomalyDetectorJobActionHandlerTests extends OpenSearchTestCas
 
     private ExecuteADResultResponseRecorder recorder;
     private Client client;
+    private RunAsSubjectClient pluginClient;
     private ADIndexJobActionHandler handler;
     private ResultBulkIndexingHandler<AnomalyResult, ADIndex, ADIndexManagement> anomalyResultHandler;
     private NodeStateManager nodeStateManager;
@@ -106,6 +108,7 @@ public class IndexAnomalyDetectorJobActionHandlerTests extends OpenSearchTestCas
     public void setUp() throws Exception {
         super.setUp();
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             ActionListener<GetResponse> listener = (ActionListener<GetResponse>) args[1];
@@ -177,7 +180,8 @@ public class IndexAnomalyDetectorJobActionHandlerTests extends OpenSearchTestCas
             adTaskManager,
             recorder,
             nodeStateManager,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClient
         );
 
         transportService = mock(TransportService.class);

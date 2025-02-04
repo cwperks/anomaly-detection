@@ -65,6 +65,7 @@ import org.opensearch.timeseries.model.Config;
 import org.opensearch.timeseries.model.Job;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.ClientUtil;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -83,6 +84,7 @@ public class NodeStateManagerTests extends AbstractTimeSeriesTest {
     private ClusterService clusterService;
     private ClusterSettings clusterSettings;
     private Job jobToCheck;
+    private RunAsSubjectClient pluginClient;
 
     @Override
     protected NamedXContentRegistry xContentRegistry() {
@@ -112,6 +114,7 @@ public class NodeStateManagerTests extends AbstractTimeSeriesTest {
             .build();
         clock = mock(Clock.class);
         duration = Duration.ofHours(1);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         clientUtil = new ClientUtil(client);
         Set<Setting<?>> nodestateSetting = new HashSet<>(ClusterSettings.BUILT_IN_CLUSTER_SETTINGS);
@@ -137,7 +140,8 @@ public class NodeStateManagerTests extends AbstractTimeSeriesTest {
             duration,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
 
         checkpointResponse = mock(GetResponse.class);

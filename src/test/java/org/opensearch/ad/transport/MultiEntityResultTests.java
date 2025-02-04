@@ -126,6 +126,7 @@ import org.opensearch.timeseries.stats.TimeSeriesStat;
 import org.opensearch.timeseries.stats.suppliers.CounterSupplier;
 import org.opensearch.timeseries.transport.ResultProcessor;
 import org.opensearch.timeseries.util.ClientUtil;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.Transport;
 import org.opensearch.transport.TransportException;
@@ -178,6 +179,7 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
     private ADTaskManager adTaskManager;
     private ADSaveResultStrategy resultSaver;
     private ADRealTimeInferencer inferencer;
+    private RunAsSubjectClient pluginClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -218,6 +220,7 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
         transportService = mock(TransportService.class);
 
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         ThreadContext threadContext = new ThreadContext(settings);
         mockThreadPool = mock(ThreadPool.class);
         setUpADThreadPool(mockThreadPool);
@@ -466,7 +469,8 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
             TimeSeriesSettings.HOURLY_MAINTENANCE,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
 
         clientUtil = new SecurityClientUtil(stateManager, settings);
@@ -774,7 +778,8 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
             TimeSeriesSettings.HOURLY_MAINTENANCE,
             clusterService,
             TimeSeriesSettings.MAX_RETRY_FOR_UNRESPONSIVE_NODE,
-            TimeSeriesSettings.BACKOFF_MINUTES
+            TimeSeriesSettings.BACKOFF_MINUTES,
+            pluginClient
         );
 
         NodeStateManager spyStateManager = spy(stateManager);

@@ -42,6 +42,7 @@ import org.opensearch.timeseries.util.BulkUtil;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.IndexUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class ResultIndexingHandler<ResultType extends IndexableResult, IndexType extends Enum<IndexType> & TimeSeriesIndex, IndexManagementType extends IndexManagement<IndexType>> {
     private static final Logger LOG = LogManager.getLogger(ResultIndexingHandler.class);
@@ -61,6 +62,7 @@ public class ResultIndexingHandler<ResultType extends IndexableResult, IndexType
     protected final ClientUtil clientUtil;
     protected final IndexUtils indexUtils;
     protected final ClusterService clusterService;
+    protected final RunAsSubjectClient pluginClient;
 
     /**
      * Abstract class for index operation.
@@ -84,7 +86,8 @@ public class ResultIndexingHandler<ResultType extends IndexableResult, IndexType
         IndexUtils indexUtils,
         ClusterService clusterService,
         Setting<TimeValue> backOffDelaySetting,
-        Setting<Integer> maxRetrySetting
+        Setting<Integer> maxRetrySetting,
+        RunAsSubjectClient pluginClient
     ) {
         this.client = client;
         this.threadPool = threadPool;
@@ -95,6 +98,7 @@ public class ResultIndexingHandler<ResultType extends IndexableResult, IndexType
         this.clientUtil = clientUtil;
         this.indexUtils = indexUtils;
         this.clusterService = clusterService;
+        this.pluginClient = pluginClient;
     }
 
     /**

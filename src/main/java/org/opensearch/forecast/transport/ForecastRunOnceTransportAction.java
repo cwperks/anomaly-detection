@@ -31,7 +31,6 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -72,6 +71,7 @@ import org.opensearch.timeseries.stats.StatNames;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.ResultProcessor;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -96,6 +96,7 @@ public class ForecastRunOnceTransportAction extends HandledTransportAction<Forec
     private final IndexNameExpressionResolver indexNameExpressionResolver;
     private final FeatureManager featureManager;
     private final ForecastStats forecastStats;
+    private final RunAsSubjectClient pluginClient;
     private volatile Boolean filterByEnabled;
 
     protected volatile Integer maxSingleStreamForecasters;
@@ -120,7 +121,8 @@ public class ForecastRunOnceTransportAction extends HandledTransportAction<Forec
         ForecastStats forecastStats,
         ThreadPool threadPool,
         NamedXContentRegistry xContentRegistry,
-        ForecastTaskManager realTimeTaskManager
+        ForecastTaskManager realTimeTaskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(ForecastRunOnceAction.NAME, transportService, actionFilters, ForecastResultRequest::new);
 
@@ -136,6 +138,7 @@ public class ForecastRunOnceTransportAction extends HandledTransportAction<Forec
         this.indexNameExpressionResolver = indexNameExpressionResolver;
         this.featureManager = featureManager;
         this.forecastStats = forecastStats;
+        this.pluginClient = pluginClient;
 
         this.client = client;
         this.circuitBreakerService = circuitBreakerService;
@@ -155,23 +158,18 @@ public class ForecastRunOnceTransportAction extends HandledTransportAction<Forec
     protected void doExecute(Task task, ForecastResultRequest request, ActionListener<ForecastResultResponse> listener) {
         String forecastID = request.getConfigId();
         User user = ParseUtils.getUserContext(client);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
 
-            resolveUserAndExecute(
-                user,
-                forecastID,
-                filterByEnabled,
-                listener,
-                (forecaster) -> executeRunOnce(forecastID, request, listener),
-                client,
-                clusterService,
-                xContentRegistry,
-                Forecaster.class
-            );
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(new OpenSearchStatusException("Failed to run once forecaster " + forecastID, INTERNAL_SERVER_ERROR));
-        }
+        resolveUserAndExecute(
+            user,
+            forecastID,
+            filterByEnabled,
+            listener,
+            (forecaster) -> executeRunOnce(forecastID, request, listener),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            Forecaster.class
+        );
     }
 
     private void executeRunOnce(String forecastID, ForecastResultRequest request, ActionListener<ForecastResultResponse> listener) {
@@ -278,7 +276,7 @@ public class ForecastRunOnceTransportAction extends HandledTransportAction<Forec
             request.indices(config.getCustomResultIndexPattern());
         }
 
-        client.search(request, ActionListener.wrap(searchResponse -> {
+        pluginClient.search(request, ActionListener.wrap(searchResponse -> {
             SearchHits hits = searchResponse.getHits();
             if (hits.getTotalHits().value > 0) {
                 // has at least one result

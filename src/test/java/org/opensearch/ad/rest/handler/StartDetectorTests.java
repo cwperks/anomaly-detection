@@ -45,6 +45,7 @@ import org.opensearch.timeseries.NodeStateManager;
 import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.model.DateRange;
 import org.opensearch.timeseries.transport.JobResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 import com.google.common.collect.ImmutableList;
@@ -89,7 +90,8 @@ public class StartDetectorTests extends AbstractTimeSeriesTest {
             adTaskManager,
             recorder,
             nodeStateManager,
-            Settings.EMPTY
+            Settings.EMPTY,
+            mock(RunAsSubjectClient.class)
         );
 
         listener = spy(new ActionListener<JobResponse>() {

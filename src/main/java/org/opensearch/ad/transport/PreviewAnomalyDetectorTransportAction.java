@@ -57,6 +57,7 @@ import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.util.ParseUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class PreviewAnomalyDetectorTransportAction extends
@@ -70,6 +71,7 @@ public class PreviewAnomalyDetectorTransportAction extends
     private volatile Boolean filterByEnabled;
     private final CircuitBreakerService adCircuitBreakerService;
     private Semaphore lock;
+    private RunAsSubjectClient pluginClient;
 
     @Inject
     public PreviewAnomalyDetectorTransportAction(
@@ -80,7 +82,8 @@ public class PreviewAnomalyDetectorTransportAction extends
         Client client,
         AnomalyDetectorRunner anomalyDetectorRunner,
         NamedXContentRegistry xContentRegistry,
-        CircuitBreakerService adCircuitBreakerService
+        CircuitBreakerService adCircuitBreakerService,
+        RunAsSubjectClient pluginClient
     ) {
         super(PreviewAnomalyDetectorAction.NAME, transportService, actionFilters, PreviewAnomalyDetectorRequest::new);
         this.clusterService = clusterService;
@@ -93,6 +96,7 @@ public class PreviewAnomalyDetectorTransportAction extends
         clusterService.getClusterSettings().addSettingsUpdateConsumer(AD_FILTER_BY_BACKEND_ROLES, it -> filterByEnabled = it);
         this.adCircuitBreakerService = adCircuitBreakerService;
         this.lock = new Semaphore(MAX_CONCURRENT_PREVIEW.get(settings), true);
+        this.pluginClient = pluginClient;
         clusterService.getClusterSettings().addSettingsUpdateConsumer(MAX_CONCURRENT_PREVIEW, it -> { lock = new Semaphore(it); });
     }
 
@@ -105,22 +109,18 @@ public class PreviewAnomalyDetectorTransportAction extends
         String detectorId = request.getId();
         User user = ParseUtils.getUserContext(client);
         ActionListener<PreviewAnomalyDetectorResponse> listener = wrapRestActionListener(actionListener, FAIL_TO_PREVIEW_DETECTOR);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                detectorId,
-                filterByEnabled,
-                listener,
-                (anomalyDetector) -> previewExecute(request, context, listener),
-                client,
-                clusterService,
-                xContentRegistry,
-                AnomalyDetector.class
-            );
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        ThreadContext.StoredContext context = client.threadPool().getThreadContext().newStoredContext(false);
+        resolveUserAndExecute(
+            user,
+            detectorId,
+            filterByEnabled,
+            listener,
+            (anomalyDetector) -> previewExecute(request, context, listener),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            AnomalyDetector.class
+        );
     }
 
     void previewExecute(
@@ -212,7 +212,7 @@ public class PreviewAnomalyDetectorTransportAction extends
     ) throws IOException {
         if (!StringUtils.isBlank(detectorId)) {
             GetRequest getRequest = new GetRequest(CommonName.CONFIG_INDEX).id(detectorId);
-            client.get(getRequest, onGetAnomalyDetectorResponse(listener, startTime, endTime, context));
+            pluginClient.get(getRequest, onGetAnomalyDetectorResponse(listener, startTime, endTime, context));
         } else {
             anomalyDetectorRunner
                 .executeDetector(detector, startTime, endTime, context, getPreviewDetectorActionListener(listener, detector));

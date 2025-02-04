@@ -41,10 +41,12 @@ import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.xcontent.ToXContent;
+import org.opensearch.identity.noop.NoopSubject;
 import org.opensearch.tasks.Task;
 import org.opensearch.test.OpenSearchIntegTestCase;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.timeseries.TestHelpers;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCase {
@@ -57,16 +59,20 @@ public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCas
     private ThreadPool threadPool;
     ThreadContext threadContext;
     private PlainActionFuture<SearchConfigInfoResponse> future;
+    private RunAsSubjectClient pluginClient;
 
     @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        pluginClient = new RunAsSubjectClient(client());
+        pluginClient.setSubject(new NoopSubject());
         action = new SearchAnomalyDetectorInfoTransportAction(
             mock(TransportService.class),
             mock(ActionFilters.class),
             client(),
-            clusterService()
+            clusterService(),
+            pluginClient
         );
         task = mock(Task.class);
         response = new ActionListener<SearchConfigInfoResponse>() {
@@ -156,7 +162,8 @@ public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCas
             mock(TransportService.class),
             mock(ActionFilters.class),
             client,
-            clusterService
+            clusterService,
+            pluginClient
         );
         SearchConfigInfoRequest request = new SearchConfigInfoRequest("testDetector", "count");
         action.doExecute(task, request, future);
@@ -176,7 +183,8 @@ public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCas
             mock(TransportService.class),
             mock(ActionFilters.class),
             client,
-            clusterService
+            clusterService,
+            pluginClient
         );
         SearchConfigInfoRequest request = new SearchConfigInfoRequest("testDetector", "match");
         action.doExecute(task, request, future);
@@ -194,7 +202,8 @@ public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCas
             mock(TransportService.class),
             mock(ActionFilters.class),
             client,
-            clusterService
+            clusterService,
+            pluginClient
         );
         SearchConfigInfoRequest request = new SearchConfigInfoRequest("testDetector", "count");
         action.doExecute(task, request, future);
@@ -212,7 +221,8 @@ public class SearchAnomalyDetectorInfoActionTests extends OpenSearchIntegTestCas
             mock(TransportService.class),
             mock(ActionFilters.class),
             client,
-            clusterService
+            clusterService,
+            pluginClient
         );
         SearchConfigInfoRequest request = new SearchConfigInfoRequest("testDetector", "match");
         action.doExecute(task, request, future);

@@ -47,7 +47,8 @@ public class ValidateForecasterActionHandlerTests extends AbstractForecasterActi
             searchFeatureDao,
             ValidationAspect.FORECASTER.getName(),
             clock,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -94,7 +95,8 @@ public class ValidateForecasterActionHandlerTests extends AbstractForecasterActi
             searchFeatureDao,
             ValidationAspect.FORECASTER.getName(),
             clock,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {

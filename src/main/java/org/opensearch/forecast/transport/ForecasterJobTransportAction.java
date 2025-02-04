@@ -27,6 +27,7 @@ import org.opensearch.forecast.rest.handler.ForecastIndexJobActionHandler;
 import org.opensearch.forecast.task.ForecastTaskManager;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.transport.BaseJobTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ForecasterJobTransportAction extends
@@ -40,7 +41,8 @@ public class ForecasterJobTransportAction extends
         ClusterService clusterService,
         Settings settings,
         NamedXContentRegistry xContentRegistry,
-        ForecastIndexJobActionHandler forecastIndexJobActionHandler
+        ForecastIndexJobActionHandler forecastIndexJobActionHandler,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             transportService,
@@ -55,7 +57,8 @@ public class ForecasterJobTransportAction extends
             FAIL_TO_START_FORECASTER,
             FAIL_TO_STOP_FORECASTER,
             Forecaster.class,
-            forecastIndexJobActionHandler
+            forecastIndexJobActionHandler,
+            pluginClient
         );
     }
 }

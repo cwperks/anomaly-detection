@@ -99,7 +99,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, null);
         assertEquals(1, testAppender.countMessage(ResultIndexingHandler.SUCCESS_SAVING_MSG, true));
@@ -137,7 +138,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, null);
 
@@ -157,7 +159,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, "test");
 
@@ -177,7 +180,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, null);
         verify(client, times(1)).index(any(), any());
@@ -196,7 +200,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, null);
         verify(client, never()).index(any(), any());
@@ -256,7 +261,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
 
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, null);
@@ -286,7 +292,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
         verify(client, times(1)).index(any(), any());
@@ -314,7 +321,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
 
@@ -348,7 +356,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
         verify(client, times(1)).index(any(), any());
@@ -379,7 +388,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
 
@@ -409,7 +419,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
 
@@ -439,7 +450,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
 
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);
@@ -471,7 +483,8 @@ public class AnomalyResultHandlerTests extends AbstractIndexHandlerTest {
             indexUtil,
             clusterService,
             AnomalyDetectorSettings.AD_BACKOFF_INITIAL_DELAY,
-            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF
+            AnomalyDetectorSettings.AD_MAX_RETRY_FOR_BACKOFF,
+            pluginClient
         );
 
         handler.index(TestHelpers.randomAnomalyDetectResult(), detectorId, testIndex);

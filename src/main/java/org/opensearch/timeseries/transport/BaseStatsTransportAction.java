@@ -18,13 +18,13 @@ import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.HandledTransportAction;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.tasks.Task;
 import org.opensearch.timeseries.constant.CommonMessages;
 import org.opensearch.timeseries.stats.Stats;
 import org.opensearch.timeseries.util.MultiResponsesDelegateActionListener;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public abstract class BaseStatsTransportAction extends HandledTransportAction<StatsRequest, StatsTimeSeriesResponse> {
@@ -33,6 +33,7 @@ public abstract class BaseStatsTransportAction extends HandledTransportAction<St
     protected final Client client;
     protected final Stats stats;
     protected final ClusterService clusterService;
+    protected final RunAsSubjectClient pluginClient;
 
     public BaseStatsTransportAction(
         TransportService transportService,
@@ -40,24 +41,21 @@ public abstract class BaseStatsTransportAction extends HandledTransportAction<St
         Client client,
         Stats stats,
         ClusterService clusterService,
-        String statsAction
+        String statsAction,
+        RunAsSubjectClient pluginClient
 
     ) {
         super(statsAction, transportService, actionFilters, StatsRequest::new);
         this.client = client;
         this.stats = stats;
         this.clusterService = clusterService;
+        this.pluginClient = pluginClient;
     }
 
     @Override
     protected void doExecute(Task task, StatsRequest request, ActionListener<StatsTimeSeriesResponse> actionListener) {
         ActionListener<StatsTimeSeriesResponse> listener = wrapRestActionListener(actionListener, CommonMessages.FAIL_TO_GET_STATS);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            getStats(client, listener, request);
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        getStats(pluginClient, listener, request);
     }
 
     /**

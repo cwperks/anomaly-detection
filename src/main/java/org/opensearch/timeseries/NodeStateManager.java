@@ -51,6 +51,7 @@ import org.opensearch.timeseries.transport.BackPressureRouting;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class NodeStateManager implements MaintenanceState, CleanState, ExceptionRecorder {
     private static final Logger LOG = LogManager.getLogger(NodeStateManager.class);
@@ -67,6 +68,7 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
     private Map<String, Map<String, BackPressureRouting>> backpressureMuter;
     private int maxRetryForUnresponsiveNode;
     private TimeValue mutePeriod;
+    private RunAsSubjectClient pluginClient;
 
     /**
      * Constructor
@@ -90,7 +92,8 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
         Duration stateTtl,
         ClusterService clusterService,
         Setting<Integer> maxRetryForUnresponsiveNodeSetting,
-        Setting<TimeValue> backoffMinutesSetting
+        Setting<TimeValue> backoffMinutesSetting,
+        RunAsSubjectClient pluginClient
     ) {
         this.states = new ConcurrentHashMap<>();
         this.client = client;
@@ -99,6 +102,7 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
         this.clock = clock;
         this.stateTtl = stateTtl;
         this.backpressureMuter = new ConcurrentHashMap<>();
+        this.pluginClient = pluginClient;
 
         this.maxRetryForUnresponsiveNode = maxRetryForUnresponsiveNodeSetting.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(maxRetryForUnresponsiveNodeSetting, it -> {
@@ -198,7 +202,7 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
         ActionListener<T> listener
     ) {
         GetRequest getRequest = new GetRequest(CommonName.CONFIG_INDEX, configId);
-        client.get(getRequest, ActionListener.wrap(response -> {
+        pluginClient.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {
                 function.accept(Optional.empty());
                 return;
@@ -237,7 +241,8 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
             BiCheckedFunction<XContentParser, String, ? extends Config, IOException> configParser = context.isAD()
                 ? AnomalyDetector::parse
                 : Forecaster::parse;
-            clientUtil.<GetRequest, GetResponse>asyncRequest(request, client::get, onGetConfigResponse(configID, configParser, listener));
+            clientUtil
+                .<GetRequest, GetResponse>asyncRequest(request, pluginClient::get, onGetConfigResponse(configID, configParser, listener));
         }
     }
 
@@ -349,7 +354,7 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
 
         GetRequest request = new GetRequest(ADCommonName.CHECKPOINT_INDEX_NAME, SingleStreamModelIdMapper.getRcfModelId(adID, 0));
 
-        clientUtil.<GetRequest, GetResponse>asyncRequest(request, client::get, onGetCheckpointResponse(adID, listener));
+        clientUtil.<GetRequest, GetResponse>asyncRequest(request, pluginClient::get, onGetCheckpointResponse(adID, listener));
     }
 
     private ActionListener<GetResponse> onGetCheckpointResponse(String adID, ActionListener<Boolean> listener) {
@@ -400,7 +405,7 @@ public class NodeStateManager implements MaintenanceState, CleanState, Exception
             listener.onResponse(Optional.of(state.getJob()));
         } else {
             GetRequest request = new GetRequest(CommonName.JOB_INDEX, configID);
-            clientUtil.<GetRequest, GetResponse>asyncRequest(request, client::get, onGetJobResponse(configID, listener));
+            clientUtil.<GetRequest, GetResponse>asyncRequest(request, pluginClient::get, onGetJobResponse(configID, listener));
         }
     }
 

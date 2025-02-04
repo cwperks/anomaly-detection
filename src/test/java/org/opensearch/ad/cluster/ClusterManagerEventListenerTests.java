@@ -45,6 +45,7 @@ import org.opensearch.timeseries.cluster.diskcleanup.BaseModelCheckpointIndexRet
 import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class ClusterManagerEventListenerTests extends AbstractTimeSeriesTest {
     private ClusterService clusterService;
@@ -91,7 +92,8 @@ public class ClusterManagerEventListenerTests extends AbstractTimeSeriesTest {
             nodeFilter,
             AnomalyDetectorSettings.AD_CHECKPOINT_TTL,
             ForecastSettings.FORECAST_CHECKPOINT_TTL,
-            Settings.EMPTY
+            Settings.EMPTY,
+            mock(RunAsSubjectClient.class)
         );
     }
 

@@ -18,7 +18,6 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -36,6 +35,7 @@ import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.util.ParseUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> & TimeSeriesIndex, IndexManagementType extends IndexManagement<IndexType>, TaskCacheManagerType extends TaskCacheManager, TaskTypeEnum extends TaskType, TaskClass extends TimeSeriesTask, TaskManagerType extends TaskManager<TaskCacheManagerType, TaskTypeEnum, TaskClass, IndexType, IndexManagementType>, IndexableResultType extends IndexableResult, ProfileActionType extends ActionType<ProfileResponse>, ExecuteResultResponseRecorderType extends ExecuteResultResponseRecorder<IndexType, IndexManagementType, TaskCacheManagerType, TaskTypeEnum, TaskClass, TaskManagerType, IndexableResultType, ProfileActionType>, IndexJobActionHandlerType extends IndexJobActionHandler<IndexType, IndexManagementType, TaskCacheManagerType, TaskTypeEnum, TaskClass, TaskManagerType, IndexableResultType, ProfileActionType, ExecuteResultResponseRecorderType>>
@@ -53,6 +53,7 @@ public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> &
     private final String failtoStopMsg;
     private final Class<? extends Config> configClass;
     private final IndexJobActionHandlerType indexJobActionHandlerType;
+    private final RunAsSubjectClient pluginClient;
 
     public BaseJobTransportAction(
         TransportService transportService,
@@ -67,7 +68,8 @@ public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> &
         String failtoStartMsg,
         String failtoStopMsg,
         Class<? extends Config> configClass,
-        IndexJobActionHandlerType indexJobActionHandlerType
+        IndexJobActionHandlerType indexJobActionHandlerType,
+        RunAsSubjectClient pluginClient
     ) {
         super(jobActionName, transportService, actionFilters, JobRequest::new);
         this.transportService = transportService;
@@ -82,6 +84,7 @@ public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> &
         this.failtoStopMsg = failtoStopMsg;
         this.configClass = configClass;
         this.indexJobActionHandlerType = indexJobActionHandlerType;
+        this.pluginClient = pluginClient;
     }
 
     @Override
@@ -96,22 +99,17 @@ public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> &
 
         // By the time request reaches here, the user permissions are validated by Security plugin.
         User user = ParseUtils.getUserContext(client);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                configId,
-                filterByEnabled,
-                listener,
-                (config) -> executeConfig(listener, configId, dateRange, historical, rawPath, requestTimeout, user, context),
-                client,
-                clusterService,
-                xContentRegistry,
-                configClass
-            );
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(
+            user,
+            configId,
+            filterByEnabled,
+            listener,
+            (config) -> executeConfig(listener, configId, dateRange, historical, rawPath, requestTimeout, user),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            configClass
+        );
     }
 
     private void executeConfig(
@@ -121,11 +119,10 @@ public abstract class BaseJobTransportAction<IndexType extends Enum<IndexType> &
         boolean historical,
         String rawPath,
         TimeValue requestTimeout,
-        User user,
-        ThreadContext.StoredContext context
+        User user
     ) {
         if (rawPath.endsWith(RestHandlerUtils.START_JOB)) {
-            indexJobActionHandlerType.startConfig(configId, dateRange, user, transportService, context, listener);
+            indexJobActionHandlerType.startConfig(configId, dateRange, user, transportService, listener);
         } else if (rawPath.endsWith(RestHandlerUtils.STOP_JOB)) {
             indexJobActionHandlerType.stopConfig(configId, historical, user, transportService, listener);
         }

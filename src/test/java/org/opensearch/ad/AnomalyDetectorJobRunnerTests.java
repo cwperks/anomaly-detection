@@ -116,6 +116,7 @@ import org.opensearch.timeseries.transport.StopConfigResponse;
 import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.ClientUtil;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 import com.google.common.collect.ImmutableList;
 
@@ -123,6 +124,9 @@ public class AnomalyDetectorJobRunnerTests extends AbstractTimeSeriesTest {
 
     @Mock
     private Client client;
+
+    @Mock
+    private RunAsSubjectClient pluginClient;
 
     @Mock
     private ClientUtil clientUtil;
@@ -290,7 +294,8 @@ public class AnomalyDetectorJobRunnerTests extends AbstractTimeSeriesTest {
             adTaskManager,
             recorder,
             nodeStateManager,
-            settings
+            settings,
+            pluginClient
         );
         adJobProcessor.setIndexJobActionHandler(adIndexJobActionHandler);
     }

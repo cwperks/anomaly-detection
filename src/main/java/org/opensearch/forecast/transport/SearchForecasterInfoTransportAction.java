@@ -15,12 +15,18 @@ import org.opensearch.action.support.ActionFilters;
 import org.opensearch.client.Client;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.timeseries.transport.BaseSearchConfigInfoTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class SearchForecasterInfoTransportAction extends BaseSearchConfigInfoTransportAction {
 
     @Inject
-    public SearchForecasterInfoTransportAction(TransportService transportService, ActionFilters actionFilters, Client client) {
-        super(transportService, actionFilters, client, SearchForecasterInfoAction.NAME);
+    public SearchForecasterInfoTransportAction(
+        TransportService transportService,
+        ActionFilters actionFilters,
+        Client client,
+        RunAsSubjectClient pluginClient
+    ) {
+        super(transportService, actionFilters, client, SearchForecasterInfoAction.NAME, pluginClient);
     }
 }

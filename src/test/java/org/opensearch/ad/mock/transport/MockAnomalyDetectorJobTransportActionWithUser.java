@@ -40,6 +40,7 @@ import org.opensearch.timeseries.model.DateRange;
 import org.opensearch.timeseries.transport.JobRequest;
 import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransportAction<JobRequest, JobResponse> {
@@ -51,11 +52,11 @@ public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransp
     private final ADIndexManagement anomalyDetectionIndices;
     private final NamedXContentRegistry xContentRegistry;
     private volatile Boolean filterByEnabled;
-    private ThreadContext.StoredContext context;
     private final ADTaskManager adTaskManager;
     private final TransportService transportService;
     private final ExecuteADResultResponseRecorder recorder;
     private final NodeStateManager nodeStateManager;
+    private final RunAsSubjectClient pluginClient;
 
     @Inject
     public MockAnomalyDetectorJobTransportActionWithUser(
@@ -68,7 +69,8 @@ public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransp
         NamedXContentRegistry xContentRegistry,
         ADTaskManager adTaskManager,
         ExecuteADResultResponseRecorder recorder,
-        NodeStateManager nodeStateManager
+        NodeStateManager nodeStateManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(MockAnomalyDetectorJobAction.NAME, transportService, actionFilters, JobRequest::new);
         this.transportService = transportService;
@@ -78,11 +80,11 @@ public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransp
         this.anomalyDetectionIndices = anomalyDetectionIndices;
         this.xContentRegistry = xContentRegistry;
         this.adTaskManager = adTaskManager;
+        this.pluginClient = pluginClient;
         filterByEnabled = AD_FILTER_BY_BACKEND_ROLES.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(AD_FILTER_BY_BACKEND_ROLES, it -> filterByEnabled = it);
 
         ThreadContext threadContext = new ThreadContext(settings);
-        context = threadContext.stashContext();
         this.recorder = recorder;
         this.nodeStateManager = nodeStateManager;
     }
@@ -97,22 +99,17 @@ public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransp
         String userStr = "user_name|backendrole1,backendrole2|roles1,role2";
         // By the time request reaches here, the user permissions are validated by Security plugin.
         User user = User.parse(userStr);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                detectorId,
-                filterByEnabled,
-                listener,
-                (anomalyDetector) -> executeDetector(listener, detectorId, rawPath, requestTimeout, user, detectionDateRange, historical),
-                client,
-                clusterService,
-                xContentRegistry,
-                AnomalyDetector.class
-            );
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        resolveUserAndExecute(
+            user,
+            detectorId,
+            filterByEnabled,
+            listener,
+            (anomalyDetector) -> executeDetector(listener, detectorId, rawPath, requestTimeout, user, detectionDateRange, historical),
+            pluginClient,
+            clusterService,
+            xContentRegistry,
+            AnomalyDetector.class
+        );
     }
 
     private void executeDetector(
@@ -131,10 +128,11 @@ public class MockAnomalyDetectorJobTransportActionWithUser extends HandledTransp
             adTaskManager,
             recorder,
             nodeStateManager,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClient
         );
         if (rawPath.endsWith(RestHandlerUtils.START_JOB)) {
-            handler.startConfig(detectorId, detectionDateRange, user, transportService, context, listener);
+            handler.startConfig(detectorId, detectionDateRange, user, transportService, listener);
         } else if (rawPath.endsWith(RestHandlerUtils.STOP_JOB)) {
             // Stop detector
             handler.stopConfig(detectorId, historical, user, transportService, listener);

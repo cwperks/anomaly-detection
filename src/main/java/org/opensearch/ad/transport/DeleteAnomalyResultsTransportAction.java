@@ -23,7 +23,6 @@ import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.commons.authuser.User;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.index.reindex.BulkByScrollResponse;
@@ -31,11 +30,13 @@ import org.opensearch.index.reindex.DeleteByQueryAction;
 import org.opensearch.index.reindex.DeleteByQueryRequest;
 import org.opensearch.tasks.Task;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class DeleteAnomalyResultsTransportAction extends HandledTransportAction<DeleteByQueryRequest, BulkByScrollResponse> {
 
     private final Client client;
+    private final RunAsSubjectClient pluginClient;
     private volatile Boolean filterEnabled;
     private static final Logger logger = LogManager.getLogger(DeleteAnomalyResultsTransportAction.class);
 
@@ -45,10 +46,12 @@ public class DeleteAnomalyResultsTransportAction extends HandledTransportAction<
         ActionFilters actionFilters,
         Settings settings,
         ClusterService clusterService,
-        Client client
+        Client client,
+        RunAsSubjectClient pluginClient
     ) {
         super(DeleteAnomalyResultsAction.NAME, transportService, actionFilters, DeleteByQueryRequest::new);
         this.client = client;
+        this.pluginClient = pluginClient;
         filterEnabled = AD_FILTER_BY_BACKEND_ROLES.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(AD_FILTER_BY_BACKEND_ROLES, it -> filterEnabled = it);
     }
@@ -61,12 +64,8 @@ public class DeleteAnomalyResultsTransportAction extends HandledTransportAction<
 
     public void delete(DeleteByQueryRequest request, ActionListener<BulkByScrollResponse> listener) {
         User user = ParseUtils.getUserContext(client);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            validateRole(request, user, listener);
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        validateRole(request, user, listener);
+
     }
 
     private void validateRole(DeleteByQueryRequest request, User user, ActionListener<BulkByScrollResponse> listener) {
@@ -74,12 +73,12 @@ public class DeleteAnomalyResultsTransportAction extends HandledTransportAction<
             // Case 1: user == null when 1. Security is disabled. 2. When user is super-admin
             // Case 2: If Security is enabled and filter is disabled, proceed with search as
             // user is already authenticated to hit this API.
-            client.execute(DeleteByQueryAction.INSTANCE, request, listener);
+            pluginClient.execute(DeleteByQueryAction.INSTANCE, request, listener);
         } else {
             // Security is enabled and backend role filter is enabled
             try {
                 ParseUtils.addUserBackendRolesFilter(user, request.getSearchRequest().source());
-                client.execute(DeleteByQueryAction.INSTANCE, request, listener);
+                pluginClient.execute(DeleteByQueryAction.INSTANCE, request, listener);
             } catch (Exception e) {
                 listener.onFailure(e);
             }

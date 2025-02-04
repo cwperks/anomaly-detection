@@ -35,9 +35,11 @@ import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.identity.noop.NoopSubject;
 import org.opensearch.tasks.Task;
 import org.opensearch.test.OpenSearchIntegTestCase;
 import org.opensearch.timeseries.NodeStateManager;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class DeleteAnomalyDetectorActionTests extends OpenSearchIntegTestCase {
@@ -56,6 +58,8 @@ public class DeleteAnomalyDetectorActionTests extends OpenSearchIntegTestCase {
         );
         when(clusterService.getClusterSettings()).thenReturn(clusterSettings);
         adTaskManager = mock(ADTaskManager.class);
+        RunAsSubjectClient pluginClient = new RunAsSubjectClient(client());
+        pluginClient.setSubject(new NoopSubject());
         action = new DeleteAnomalyDetectorTransportAction(
             mock(TransportService.class),
             mock(ActionFilters.class),
@@ -64,7 +68,8 @@ public class DeleteAnomalyDetectorActionTests extends OpenSearchIntegTestCase {
             Settings.EMPTY,
             xContentRegistry(),
             mock(NodeStateManager.class),
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
         response = new ActionListener<DeleteResponse>() {
             @Override

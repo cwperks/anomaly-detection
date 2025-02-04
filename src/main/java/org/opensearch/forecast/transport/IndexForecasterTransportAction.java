@@ -48,6 +48,7 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.tasks.Task;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.function.ExecutorFunction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -63,6 +64,7 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
     private final SearchFeatureDao searchFeatureDao;
     private final ForecastTaskManager taskManager;
     private final Settings settings;
+    private final RunAsSubjectClient pluginClient;
 
     @Inject
     public IndexForecasterTransportAction(
@@ -75,7 +77,8 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
         ForecastIndexManagement forecastIndices,
         NamedXContentRegistry xContentRegistry,
         SearchFeatureDao searchFeatureDao,
-        ForecastTaskManager taskManager
+        ForecastTaskManager taskManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(IndexForecasterAction.NAME, transportService, actionFilters, IndexForecasterRequest::new);
         this.client = client;
@@ -89,6 +92,7 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
         this.searchFeatureDao = searchFeatureDao;
         this.taskManager = taskManager;
         this.settings = settings;
+        this.pluginClient = pluginClient;
     }
 
     @Override
@@ -98,18 +102,14 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
         RestRequest.Method method = request.getMethod();
         String errorMessage = method == RestRequest.Method.PUT ? FAIL_TO_UPDATE_FORECASTER : FAIL_TO_CREATE_FORECASTER;
         ActionListener<IndexForecasterResponse> listener = wrapRestActionListener(actionListener, errorMessage);
-        try (ThreadContext.StoredContext context = client.threadPool().getThreadContext().stashContext()) {
-            resolveUserAndExecute(
-                user,
-                forecasterId,
-                method,
-                listener,
-                (forecaster) -> forecastExecute(request, user, forecaster, context, listener)
-            );
-        } catch (Exception e) {
-            LOG.error(e);
-            listener.onFailure(e);
-        }
+        ThreadContext.StoredContext context = client.threadPool().getThreadContext().newStoredContext(false);
+        resolveUserAndExecute(
+            user,
+            forecasterId,
+            method,
+            listener,
+            (forecaster) -> forecastExecute(request, user, forecaster, context, listener)
+        );
     }
 
     private void resolveUserAndExecute(
@@ -142,7 +142,7 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
                     forecasterId,
                     listener,
                     function,
-                    client,
+                    pluginClient,
                     clusterService,
                     xContentRegistry,
                     filterByBackendRole,
@@ -203,7 +203,8 @@ public class IndexForecasterTransportAction extends HandledTransportAction<Index
                 forecastUser,
                 taskManager,
                 searchFeatureDao,
-                settings
+                settings,
+                pluginClient
             );
             indexForecasterActionHandler.start(listener);
         }, listener);
