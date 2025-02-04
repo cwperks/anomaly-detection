@@ -954,7 +954,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
             adTaskCacheManager,
             threadPool,
             stateManager,
-            adTaskProfileRunner
+            adTaskProfileRunner,
+            pluginClient
         );
 
         adBatchTaskRunner = new ADBatchTaskRunner(
@@ -972,7 +973,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
             adTaskCacheManager,
             searchFeatureDao,
             hashRing,
-            adModelManager
+            adModelManager,
+            pluginClient
         );
 
         adResultResponseRecorder = new ExecuteADResultResponseRecorder(
@@ -1304,7 +1306,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
             clusterService,
             settings,
             threadPool,
-            stateManager
+            stateManager,
+            pluginClient
         );
 
         ResultBulkIndexingHandler<ForecastResult, ForecastIndex, ForecastIndexManagement> forecastResultHandler =

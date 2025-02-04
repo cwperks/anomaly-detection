@@ -271,7 +271,8 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
                 adTaskCacheManager,
                 threadPool,
                 nodeStateManager,
-                taskProfileRunner
+                taskProfileRunner,
+                pluginClient
             )
         );
         indexAnomalyDetectorJobActionHandler = new ADIndexJobActionHandler(
@@ -790,7 +791,8 @@ public class ADTaskManagerTests extends AbstractTimeSeriesTest {
                 adTaskCacheManager,
                 threadPool,
                 nodeStateManager,
-                taskProfileRunner
+                taskProfileRunner,
+                pluginClient
             )
         );
         adTaskManager.cleanResultOfDeletedConfig();

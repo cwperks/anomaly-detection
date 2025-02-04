@@ -103,6 +103,7 @@ import org.opensearch.timeseries.transport.StatsRequest;
 import org.opensearch.timeseries.transport.handler.ResultBulkIndexingHandler;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportRequestOptions;
 import org.opensearch.transport.TransportService;
@@ -128,6 +129,7 @@ public class ADBatchTaskRunner {
     private final ResultBulkIndexingHandler<AnomalyResult, ADIndex, ADIndexManagement> anomalyResultBulkIndexHandler;
     private final ADIndexManagement anomalyDetectionIndices;
     private final SearchFeatureDao searchFeatureDao;
+    private final RunAsSubjectClient pluginClient;
 
     private final ADTaskCacheManager adTaskCacheManager;
     private final TransportRequestOptions option;
@@ -158,7 +160,8 @@ public class ADBatchTaskRunner {
         ADTaskCacheManager adTaskCacheManager,
         SearchFeatureDao searchFeatureDao,
         HashRing hashRing,
-        ADModelManager modelManager
+        ADModelManager modelManager,
+        RunAsSubjectClient pluginClient
     ) {
         this.settings = settings;
         this.threadPool = threadPool;
@@ -182,6 +185,7 @@ public class ADBatchTaskRunner {
         this.searchFeatureDao = searchFeatureDao;
         this.hashRing = hashRing;
         this.modelManager = modelManager;
+        this.pluginClient = pluginClient;
 
         this.maxAdBatchTaskPerNode = MAX_BATCH_TASK_PER_NODE.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(MAX_BATCH_TASK_PER_NODE, it -> maxAdBatchTaskPerNode = it);

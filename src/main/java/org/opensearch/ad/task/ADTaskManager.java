@@ -131,6 +131,7 @@ import org.opensearch.timeseries.transport.StatsRequest;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportRequestOptions;
 import org.opensearch.transport.TransportService;
 
@@ -176,7 +177,8 @@ public class ADTaskManager extends TaskManager<ADTaskCacheManager, ADTaskType, A
         ADTaskCacheManager adTaskCacheManager,
         ThreadPool threadPool,
         NodeStateManager nodeStateManager,
-        ADTaskProfileRunner taskProfileRunner
+        ADTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             adTaskCacheManager,
@@ -197,7 +199,8 @@ public class ADTaskManager extends TaskManager<ADTaskCacheManager, ADTaskType, A
             ALL_AD_RESULTS_INDEX_PATTERN,
             AD_BATCH_TASK_THREAD_POOL_NAME,
             DELETE_AD_RESULT_WHEN_DELETE_DETECTOR,
-            TaskState.STOPPED
+            TaskState.STOPPED,
+            pluginClient
         );
 
         this.nodeFilter = nodeFilter;

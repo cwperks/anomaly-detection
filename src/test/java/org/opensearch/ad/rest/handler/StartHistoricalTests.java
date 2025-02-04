@@ -152,7 +152,8 @@ public class StartHistoricalTests extends AbstractTimeSeriesTest {
                 adTaskCacheManager,
                 threadPool,
                 nodeStateManager,
-                taskProfileRunner
+                taskProfileRunner,
+                pluginClient
             )
         );
 

@@ -78,6 +78,7 @@ import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.ParseUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ForecastTaskManager extends
@@ -92,7 +93,8 @@ public class ForecastTaskManager extends
         ClusterService clusterService,
         Settings settings,
         ThreadPool threadPool,
-        NodeStateManager nodeStateManager
+        NodeStateManager nodeStateManager,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             forecastTaskCacheManager,
@@ -113,7 +115,8 @@ public class ForecastTaskManager extends
             ALL_FORECAST_RESULTS_INDEX_PATTERN,
             FORECAST_THREAD_POOL_NAME,
             DELETE_FORECAST_RESULT_WHEN_DELETE_FORECASTER,
-            TaskState.INACTIVE
+            TaskState.INACTIVE,
+            pluginClient
         );
     }
 

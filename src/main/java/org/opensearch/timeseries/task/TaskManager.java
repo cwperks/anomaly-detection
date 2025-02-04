@@ -105,6 +105,7 @@ import org.opensearch.timeseries.transport.JobResponse;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.ParseUtils;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 import com.google.common.collect.ImmutableMap;
@@ -134,6 +135,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
     private final String batchTaskThreadPoolName;
     private volatile boolean deleteResultWhenDeleteConfig;
     private final TaskState stopped;
+    protected final RunAsSubjectClient pluginClient;
 
     public TaskManager(
         TaskCacheManagerType taskCacheManager,
@@ -154,7 +156,8 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         String allResultIndexPattern,
         String batchTaskThreadPoolName,
         Setting<Boolean> deleteResultWhenDeleteConfigSetting,
-        TaskState stopped
+        TaskState stopped,
+        RunAsSubjectClient pluginClient
     ) {
         this.taskCacheManager = taskCacheManager;
         this.clusterService = clusterService;
@@ -182,6 +185,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
             .addSettingsUpdateConsumer(deleteResultWhenDeleteConfigSetting, it -> deleteResultWhenDeleteConfig = it);
 
         this.stopped = stopped;
+        this.pluginClient = pluginClient;
     }
 
     public boolean skipUpdateRealtimeTask(String configId, String error) {
@@ -359,7 +363,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         String script = String.format(Locale.ROOT, "ctx._source.%s=%s;", TimeSeriesTask.IS_LATEST_FIELD, false);
         updateByQueryRequest.setScript(new Script(script));
 
-        client.execute(UpdateByQueryAction.INSTANCE, updateByQueryRequest, ActionListener.wrap(r -> {
+        pluginClient.execute(UpdateByQueryAction.INSTANCE, updateByQueryRequest, ActionListener.wrap(r -> {
             List<BulkItemResponse.Failure> bulkFailures = r.getBulkFailures();
             if (bulkFailures.isEmpty()) {
                 // Realtime AD coordinating node is chosen by job scheduler, we won't know it until realtime AD job
@@ -564,7 +568,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         searchRequest.source(sourceBuilder);
         searchRequest.indices(stateIndex);
 
-        client.search(searchRequest, ActionListener.wrap(r -> {
+        pluginClient.search(searchRequest, ActionListener.wrap(r -> {
             // https://github.com/opendistro-for-elasticsearch/anomaly-detection/pull/359#discussion_r558653132
             // getTotalHits will be null when we track_total_hits is false in the query request.
             // Add more checking here to cover some unknown cases.
@@ -620,7 +624,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         TimeSeriesTask tsTask = runningRealtimeTasks.get(0);
         String configId = tsTask.getConfigId();
         GetRequest getJobRequest = new GetRequest(CommonName.JOB_INDEX).id(configId);
-        client.get(getJobRequest, ActionListener.wrap(r -> {
+        pluginClient.get(getJobRequest, ActionListener.wrap(r -> {
             if (r.isExists()) {
                 try (XContentParser parser = createXContentParserFromRegistry(xContentRegistry, r.getSourceAsBytesRef())) {
                     ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
@@ -720,7 +724,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         updatedContent.put(TimeSeriesTask.LAST_UPDATE_TIME_FIELD, Instant.now().toEpochMilli());
         updateRequest.doc(updatedContent);
         updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        client.update(updateRequest, listener);
+        pluginClient.update(updateRequest, listener);
     }
 
     /**
@@ -742,7 +746,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
      */
     public void deleteTask(String taskId, ActionListener<DeleteResponse> listener) {
         DeleteRequest deleteRequest = new DeleteRequest(stateIndex, taskId);
-        client.delete(deleteRequest, listener);
+        pluginClient.delete(deleteRequest, listener);
     }
 
     /**
@@ -760,7 +764,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
             request
                 .source(tsTask.toXContent(builder, RestHandlerUtils.XCONTENT_WITH_TYPE))
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-            client.index(request, ActionListener.wrap(r -> function.accept(r), e -> {
+            pluginClient.index(request, ActionListener.wrap(r -> function.accept(r), e -> {
                 logger.error("Failed to create task for config " + tsTask.getConfigId(), e);
                 listener.onFailure(e);
             }));
@@ -836,7 +840,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
                         listener.onFailure(e);
                     }
                 }
-                client.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(res -> {
+                pluginClient.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(res -> {
                     logger.info("Old tasks deleted for config {}", configId);
                     BulkItemResponse[] bulkItemResponses = res.getItems();
                     if (bulkItemResponses != null && bulkItemResponses.length > 0) {
@@ -866,7 +870,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
             }
         });
 
-        client.search(searchRequest, searchListener);
+        pluginClient.search(searchRequest, searchListener);
     }
 
     /**
@@ -883,12 +887,12 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
             }
             DeleteByQueryRequest deleteResultsRequest = new DeleteByQueryRequest(allResultIndexPattern);
             deleteResultsRequest.setQuery(new TermsQueryBuilder(CommonName.TASK_ID_FIELD, taskId));
-            client.execute(DeleteByQueryAction.INSTANCE, deleteResultsRequest, ActionListener.wrap(res -> {
+            pluginClient.execute(DeleteByQueryAction.INSTANCE, deleteResultsRequest, ActionListener.wrap(res -> {
                 logger.debug("Successfully deleted results of task " + taskId);
                 DeleteByQueryRequest deleteChildTasksRequest = new DeleteByQueryRequest(stateIndex);
                 deleteChildTasksRequest.setQuery(new TermsQueryBuilder(TimeSeriesTask.PARENT_TASK_ID_FIELD, taskId));
 
-                client.execute(DeleteByQueryAction.INSTANCE, deleteChildTasksRequest, ActionListener.wrap(r -> {
+                pluginClient.execute(DeleteByQueryAction.INSTANCE, deleteChildTasksRequest, ActionListener.wrap(r -> {
                     logger.debug("Successfully deleted child tasks of task " + taskId);
                     cleanChildTasksAndResultsOfDeletedTask();
                 }, e -> { logger.error("Failed to delete child tasks of task " + taskId, e); }));
@@ -908,7 +912,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         String script = String.format(Locale.ROOT, "ctx._source.%s='%s';", TimeSeriesTask.STATE_FIELD, TaskState.INACTIVE.name());
         updateByQueryRequest.setScript(new Script(script));
 
-        client.execute(UpdateByQueryAction.INSTANCE, updateByQueryRequest, ActionListener.wrap(r -> {
+        pluginClient.execute(UpdateByQueryAction.INSTANCE, updateByQueryRequest, ActionListener.wrap(r -> {
             List<BulkItemResponse.Failure> bulkFailures = r.getBulkFailures();
             if (ParseUtils.isNullOrEmpty(bulkFailures)) {
                 logger.debug("Updated {} child entity tasks state for config task {}", r.getUpdated(), configTaskId);
@@ -941,7 +945,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         });
 
         bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        client.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(res -> {
+        pluginClient.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(res -> {
             BulkItemResponse[] bulkItemResponses = res.getItems();
             if (bulkItemResponses != null && bulkItemResponses.length > 0) {
                 for (BulkItemResponse bulkItemResponse : bulkItemResponses) {
@@ -970,7 +974,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         query.filter(new TermQueryBuilder(configIdFieldName, configId));
 
         request.setQuery(query);
-        client.execute(DeleteByQueryAction.INSTANCE, request, ActionListener.wrap(r -> {
+        pluginClient.execute(DeleteByQueryAction.INSTANCE, request, ActionListener.wrap(r -> {
             if (r.getBulkFailures() == null || r.getBulkFailures().size() == 0) {
                 logger.info("tasks deleted for config {}", configId);
                 deleteResultOfConfig(configId);
@@ -997,7 +1001,7 @@ public abstract class TaskManager<TaskCacheManagerType extends TaskCacheManager,
         logger.info("Start to delete results of config {}", configId);
         DeleteByQueryRequest deleteADResultsRequest = new DeleteByQueryRequest(allResultIndexPattern);
         deleteADResultsRequest.setQuery(new TermQueryBuilder(configIdFieldName, configId));
-        client.execute(DeleteByQueryAction.INSTANCE, deleteADResultsRequest, ActionListener.wrap(response -> {
+        pluginClient.execute(DeleteByQueryAction.INSTANCE, deleteADResultsRequest, ActionListener.wrap(response -> {
             logger.debug("Successfully deleted results of config " + configId);
         }, exception -> {
             logger.error("Failed to delete results of config " + configId, exception);

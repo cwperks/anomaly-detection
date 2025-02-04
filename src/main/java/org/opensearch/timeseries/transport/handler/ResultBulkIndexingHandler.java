@@ -157,7 +157,7 @@ public class ResultBulkIndexingHandler<ResultType extends IndexableResult, Index
     }
 
     private void bulk(String resultIndex, List<ResultType> results, ActionListener<BulkResponse> listener) {
-        BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
+        BulkRequestBuilder bulkRequestBuilder = pluginClient.prepareBulk();
         results.forEach(analysisResult -> {
             try (XContentBuilder builder = jsonBuilder()) {
                 IndexRequest indexRequest = new IndexRequest(resultIndex)
@@ -169,7 +169,7 @@ public class ResultBulkIndexingHandler<ResultType extends IndexableResult, Index
                 throw new TimeSeriesException(error);
             }
         });
-        client.bulk(bulkRequestBuilder.request(), ActionListener.wrap(r -> {
+        pluginClient.bulk(bulkRequestBuilder.request(), ActionListener.wrap(r -> {
             if (r.hasFailures()) {
                 String failureMessage = r.buildFailureMessage();
                 LOG.warn("Failed to bulk index result " + failureMessage);

@@ -108,10 +108,7 @@ public class AbstractADSyntheticDataTest extends AbstractSyntheticDataTest {
     protected void startHistorical(String detectorId, Instant begin, Instant end, RestClient client, int entitySize) throws IOException,
         InterruptedException {
         // trigger run in current interval
-        Request request = new Request(
-            "POST",
-            String.format(Locale.ROOT, "/_opendistro/_anomaly_detection/detectors/%s/_start", detectorId)
-        );
+        Request request = new Request("POST", String.format(Locale.ROOT, "/_plugins/_anomaly_detection/detectors/%s/_start", detectorId));
         request
             .setJsonEntity(
                 String.format(Locale.ROOT, "{ \"start_time\": %d, \"end_time\": %d }", begin.toEpochMilli(), end.toEpochMilli())
