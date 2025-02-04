@@ -61,6 +61,7 @@ import org.opensearch.timeseries.transport.ProfileResponse;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
 import org.opensearch.timeseries.util.ExceptionUtil;
 import org.opensearch.timeseries.util.MultiResponsesDelegateActionListener;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -82,6 +83,7 @@ public abstract class ProfileRunner<TaskCacheManagerType extends TaskCacheManage
     protected TaskProfileRunnerType taskProfileRunner;
     protected ProfileActionType profileAction;
     protected BiCheckedFunction<XContentParser, String, ? extends Config, IOException> configParser;
+    protected RunAsSubjectClient pluginClient;
 
     public ProfileRunner(
         Client client,
@@ -98,7 +100,8 @@ public abstract class ProfileRunner<TaskCacheManagerType extends TaskCacheManage
         ProfileName taskProfile,
         ProfileActionType profileAction,
         BiCheckedFunction<XContentParser, String, ? extends Config, IOException> configParser,
-        TaskProfileRunnerType taskProfileRunner
+        TaskProfileRunnerType taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(requiredSamples);
         this.client = client;
@@ -119,6 +122,7 @@ public abstract class ProfileRunner<TaskCacheManagerType extends TaskCacheManage
         this.profileAction = profileAction;
         this.configParser = configParser;
         this.taskProfileRunner = taskProfileRunner;
+        this.pluginClient = pluginClient;
     }
 
     public void profile(String configId, ActionListener<ConfigProfileType> listener, Set<ProfileName> profilesToCollect) {
@@ -135,7 +139,7 @@ public abstract class ProfileRunner<TaskCacheManagerType extends TaskCacheManage
         ActionListener<ConfigProfileType> listener
     ) {
         GetRequest getConfigRequest = new GetRequest(CommonName.CONFIG_INDEX, configId);
-        client.get(getConfigRequest, ActionListener.wrap(getConfigResponse -> {
+        pluginClient.get(getConfigRequest, ActionListener.wrap(getConfigResponse -> {
             if (getConfigResponse != null && getConfigResponse.isExists()) {
                 try (
                     XContentParser xContentParser = XContentType.JSON

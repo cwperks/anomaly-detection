@@ -60,6 +60,7 @@ import org.opensearch.timeseries.model.ProfileName;
 import org.opensearch.timeseries.transport.ProfileNodeResponse;
 import org.opensearch.timeseries.transport.ProfileResponse;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -138,7 +139,8 @@ public class SingleStreamProfileRunnerTests extends AbstractTimeSeriesTest {
             requiredSamples,
             transportService,
             forecastTaskManager,
-            taskProfileRunner
+            taskProfileRunner,
+            mock(RunAsSubjectClient.class)
         );
 
         doAnswer(invocation -> {

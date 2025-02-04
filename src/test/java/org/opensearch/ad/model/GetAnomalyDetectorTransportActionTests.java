@@ -78,6 +78,7 @@ public class GetAnomalyDetectorTransportActionTests extends AbstractTimeSeriesTe
                 Settings.EMPTY,
                 null,
                 taskManager,
+                null,
                 null
             )
         );
@@ -132,6 +133,7 @@ public class GetAnomalyDetectorTransportActionTests extends AbstractTimeSeriesTe
                 Settings.EMPTY,
                 null,
                 taskManager,
+                null,
                 null
             )
         );

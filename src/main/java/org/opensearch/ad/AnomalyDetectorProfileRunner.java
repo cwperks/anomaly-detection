@@ -30,6 +30,7 @@ import org.opensearch.timeseries.AnalysisType;
 import org.opensearch.timeseries.ProfileRunner;
 import org.opensearch.timeseries.model.ProfileName;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -54,7 +55,8 @@ public class AnomalyDetectorProfileRunner extends
         long requiredSamples,
         TransportService transportService,
         ADTaskManager adTaskManager,
-        ADTaskProfileRunner taskProfileRunner
+        ADTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             client,
@@ -71,7 +73,8 @@ public class AnomalyDetectorProfileRunner extends
             ProfileName.AD_TASK,
             ADProfileAction.INSTANCE,
             AnomalyDetector::parse,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
     }
 

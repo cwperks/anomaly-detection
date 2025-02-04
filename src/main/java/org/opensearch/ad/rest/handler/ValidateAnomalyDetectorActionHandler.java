@@ -24,6 +24,7 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.model.Config;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 
 /**
@@ -70,7 +71,8 @@ public class ValidateAnomalyDetectorActionHandler extends AbstractAnomalyDetecto
         SearchFeatureDao searchFeatureDao,
         String validationType,
         Clock clock,
-        Settings settings
+        Settings settings,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             clusterService,
@@ -96,7 +98,8 @@ public class ValidateAnomalyDetectorActionHandler extends AbstractAnomalyDetecto
             validationType,
             true,
             clock,
-            settings
+            settings,
+            pluginClient
         );
     }
 }

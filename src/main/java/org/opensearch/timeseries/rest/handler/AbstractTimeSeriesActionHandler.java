@@ -1025,7 +1025,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
             indexRequest.id(id);
         }
 
-        client.index(indexRequest, new ActionListener<IndexResponse>() {
+        pluginClient.index(indexRequest, new ActionListener<IndexResponse>() {
             @Override
             public void onResponse(IndexResponse indexResponse) {
                 String errorMsg = checkShardsFailure(indexResponse);

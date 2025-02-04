@@ -137,7 +137,8 @@ public class GetForecasterTransportAction extends
         long requiredSamples,
         TransportService transportService,
         ForecastTaskManager taskManager,
-        ForecastTaskProfileRunner taskProfileRunner
+        ForecastTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         return new ForecastProfileRunner(
             client,
@@ -147,7 +148,8 @@ public class GetForecasterTransportAction extends
             TimeSeriesSettings.NUM_MIN_SAMPLES,
             transportService,
             taskManager,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
     }
 }

@@ -78,6 +78,7 @@ public class GetForecasterTransportActionTests extends AbstractTimeSeriesTest {
                 Settings.EMPTY,
                 null,
                 taskManager,
+                null,
                 null
             )
         );

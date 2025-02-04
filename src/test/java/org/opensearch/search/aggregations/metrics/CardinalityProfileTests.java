@@ -87,7 +87,8 @@ public class CardinalityProfileTests extends AbstractProfileRunnerTests {
             requiredSamples,
             transportService,
             adTaskManager,
-            mock(ADTaskProfileRunner.class)
+            mock(ADTaskProfileRunner.class),
+            pluginClient
         );
 
         doAnswer(invocation -> {

@@ -89,7 +89,8 @@ public class ValidateAnomalyDetectorTransportAction extends BaseValidateConfigTr
             searchFeatureDao,
             request.getValidationType(),
             clock,
-            settings
+            settings,
+            pluginClient
         );
     }
 }

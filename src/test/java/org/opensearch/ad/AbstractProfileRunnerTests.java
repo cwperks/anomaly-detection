@@ -44,6 +44,7 @@ import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.TestHelpers;
 import org.opensearch.timeseries.model.ProfileName;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -76,6 +77,7 @@ public class AbstractProfileRunnerTests extends AbstractTimeSeriesTest {
     protected ClusterService clusterService;
     protected TransportService transportService;
     protected ADTaskManager adTaskManager;
+    protected RunAsSubjectClient pluginClient;
 
     protected static Set<ProfileName> stateOnly;
     protected static Set<ProfileName> stateNError;
@@ -150,6 +152,7 @@ public class AbstractProfileRunnerTests extends AbstractTimeSeriesTest {
     public void setUp() throws Exception {
         super.setUp();
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         when(client.threadPool()).thenReturn(threadPool);
         taskProfileRunner = mock(ADTaskProfileRunner.class);
 

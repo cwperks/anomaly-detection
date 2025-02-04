@@ -22,6 +22,7 @@ import org.opensearch.timeseries.ProfileRunner;
 import org.opensearch.timeseries.model.ProfileName;
 import org.opensearch.timeseries.task.TaskCacheManager;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -36,7 +37,8 @@ public class ForecastProfileRunner extends
         long requiredSamples,
         TransportService transportService,
         ForecastTaskManager forecastTaskManager,
-        ForecastTaskProfileRunner taskProfileRunner
+        ForecastTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             client,
@@ -53,7 +55,8 @@ public class ForecastProfileRunner extends
             ProfileName.FORECAST_TASK,
             ForecastProfileAction.INSTANCE,
             Forecaster::parse,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
     }
 

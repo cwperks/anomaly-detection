@@ -68,6 +68,7 @@ import org.opensearch.timeseries.model.ProfileName;
 import org.opensearch.timeseries.transport.ProfileNodeResponse;
 import org.opensearch.timeseries.transport.ProfileResponse;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -84,6 +85,7 @@ public class MultiEntityProfileRunnerTests extends AbstractTimeSeriesTest {
     private String node1;
     private String nodeName1;
     private DiscoveryNode discoveryNode1;
+    private RunAsSubjectClient pluginClient;
 
     private String node2;
     private String nodeName2;
@@ -120,6 +122,7 @@ public class MultiEntityProfileRunnerTests extends AbstractTimeSeriesTest {
     public void setUp() throws Exception {
         super.setUp();
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         taskProfileRunner = mock(ADTaskProfileRunner.class);
         NodeStateManager nodeStateManager = mock(NodeStateManager.class);
         clientUtil = new SecurityClientUtil(nodeStateManager, Settings.EMPTY);
@@ -147,7 +150,8 @@ public class MultiEntityProfileRunnerTests extends AbstractTimeSeriesTest {
             requiredSamples,
             transportService,
             adTaskManager,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
 
         doAnswer(invocation -> {

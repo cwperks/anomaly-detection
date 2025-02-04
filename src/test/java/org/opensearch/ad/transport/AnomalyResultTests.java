@@ -129,6 +129,7 @@ import org.opensearch.timeseries.stats.TimeSeriesStat;
 import org.opensearch.timeseries.stats.suppliers.CounterSupplier;
 import org.opensearch.timeseries.transport.ResultProcessor;
 import org.opensearch.timeseries.transport.ResultResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.NodeNotConnectedException;
 import org.opensearch.transport.RemoteTransportException;
@@ -171,6 +172,7 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
     private ADCacheProvider cacheProvider;
     private ADRealTimeInferencer inferencer;
     private ADColdStartWorker coldStartWorker;
+    private RunAsSubjectClient pluginClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -282,6 +284,7 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
 
         ThreadPool threadPool = mock(ThreadPool.class);
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         ThreadContext threadContext = new ThreadContext(Settings.EMPTY);
         when(client.threadPool()).thenReturn(threadPool);
         when(client.threadPool().getThreadContext()).thenReturn(threadContext);
@@ -427,7 +430,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -552,7 +556,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -606,7 +611,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -670,7 +676,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         // make sure request data end time is assigned after state initialization to pass Inferencer.tryProcess method time check.
@@ -803,7 +810,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -847,7 +855,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -925,7 +934,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -978,7 +988,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
         PlainActionFuture<AnomalyResultResponse> listener = new PlainActionFuture<>();
@@ -1021,7 +1032,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         TransportRequestOptions option = TransportRequestOptions
@@ -1282,7 +1294,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -1334,7 +1347,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -1424,7 +1438,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -1478,7 +1493,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         AnomalyResultRequest request = new AnomalyResultRequest(adID, 100, 200);
@@ -1523,7 +1539,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         action.doExecute(null, request, listener);
@@ -1565,7 +1582,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         action.doExecute(null, request, listener);
@@ -1603,7 +1621,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         action.doExecute(null, request, listener);
@@ -1643,7 +1662,8 @@ public class AnomalyResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             NamedXContentRegistry.EMPTY,
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         action.doExecute(null, request, listener);

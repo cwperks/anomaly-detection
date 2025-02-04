@@ -150,7 +150,8 @@ public class GetAnomalyDetectorTransportAction extends
         long requiredSamples,
         TransportService transportService,
         ADTaskManager taskManager,
-        ADTaskProfileRunner taskProfileRunner
+        ADTaskProfileRunner taskProfileRunner,
+        RunAsSubjectClient pluginClient
     ) {
         return new AnomalyDetectorProfileRunner(
             client,
@@ -160,7 +161,8 @@ public class GetAnomalyDetectorTransportAction extends
             TimeSeriesSettings.NUM_MIN_SAMPLES,
             transportService,
             taskManager,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
     }
 

@@ -116,7 +116,8 @@ public class AnomalyDetectorProfileRunnerTests extends AbstractProfileRunnerTest
             requiredSamples,
             transportService,
             adTaskManager,
-            taskProfileRunner
+            taskProfileRunner,
+            pluginClient
         );
 
         doAnswer(invocation -> {
@@ -631,7 +632,8 @@ public class AnomalyDetectorProfileRunnerTests extends AbstractProfileRunnerTest
                 0,
                 transportService,
                 adTaskManager,
-                taskProfileRunner
+                taskProfileRunner,
+                pluginClient
             )
         );
     }

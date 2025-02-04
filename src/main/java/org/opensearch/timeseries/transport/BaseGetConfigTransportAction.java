@@ -406,7 +406,8 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
                 TimeSeriesSettings.NUM_MIN_SAMPLES,
                 transportService,
                 taskManager,
-                taskProfileRunner
+                taskProfileRunner,
+                pluginClient
             );
             profileRunner.profile(configId, getProfileActionListener(listener), profilesToCollect);
         }
@@ -513,6 +514,7 @@ public abstract class BaseGetConfigTransportAction<GetConfigResponseType extends
         long requiredSamples,
         TransportService transportService,
         TaskManagerType taskManager,
-        TaskProfileRunnerType taskProfileRunner
+        TaskProfileRunnerType taskProfileRunner,
+        RunAsSubjectClient pluginClient
     );
 }

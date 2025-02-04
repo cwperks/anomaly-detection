@@ -296,7 +296,8 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             xContentRegistry(),
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
 
         provider = mock(ADCacheProvider.class);
@@ -490,7 +491,8 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
             adStats,
             mockThreadPool,
             xContentRegistry(),
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
     }
 
@@ -721,7 +723,8 @@ public class MultiEntityResultTests extends AbstractTimeSeriesTest {
             adStats,
             threadPool,
             xContentRegistry(),
-            adTaskManager
+            adTaskManager,
+            pluginClient
         );
     }
 

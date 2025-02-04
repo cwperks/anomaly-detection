@@ -212,7 +212,7 @@ public class IndexAnomalyDetectorTransportAction extends HandledTransportAction<
         SearchRequest searchRequest = new SearchRequest()
             .indices(indices.toArray(new String[0]))
             .source(new SearchSourceBuilder().size(1).query(QueryBuilders.matchAllQuery()));
-        pluginClient.search(searchRequest, ActionListener.wrap(r -> { function.execute(); }, e -> {
+        client.search(searchRequest, ActionListener.wrap(r -> { function.execute(); }, e -> {
             // Due to below issue with security plugin, we get security_exception when invalid index name is mentioned.
             // https://github.com/opendistro-for-elasticsearch/security/issues/718
             LOG.error(e);

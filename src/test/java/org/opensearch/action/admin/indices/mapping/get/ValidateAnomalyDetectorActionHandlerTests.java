@@ -61,6 +61,7 @@ import org.opensearch.timeseries.feature.SearchFeatureDao;
 import org.opensearch.timeseries.model.ValidationAspect;
 import org.opensearch.timeseries.task.TaskManager;
 import org.opensearch.timeseries.transport.ValidateConfigResponse;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.timeseries.util.SecurityClientUtil;
 import org.opensearch.transport.TransportService;
 
@@ -91,6 +92,8 @@ public class ValidateAnomalyDetectorActionHandlerTests extends AbstractTimeSerie
 
     @Mock
     private Client clientMock;
+    @Mock
+    private RunAsSubjectClient pluginClientMock;
     @Mock
     protected ThreadPool threadPool;
     protected ThreadContext threadContext;
@@ -175,7 +178,8 @@ public class ValidateAnomalyDetectorActionHandlerTests extends AbstractTimeSerie
             searchFeatureDao,
             ValidationAspect.DETECTOR.getName(),
             clock,
-            settings
+            settings,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -232,7 +236,8 @@ public class ValidateAnomalyDetectorActionHandlerTests extends AbstractTimeSerie
             searchFeatureDao,
             "",
             clock,
-            Settings.EMPTY
+            Settings.EMPTY,
+            pluginClientMock
         );
         final CountDownLatch inProgressLatch = new CountDownLatch(1);
         handler.start(ActionListener.wrap(r -> {
@@ -295,7 +300,8 @@ public class ValidateAnomalyDetectorActionHandlerTests extends AbstractTimeSerie
             searchFeatureDao,
             ValidationAspect.DETECTOR.getName(),
             clock,
-            settings
+            settings,
+            pluginClientMock
         );
         PlainActionFuture<ValidateConfigResponse> future = PlainActionFuture.newFuture();
         handler.start(future);
