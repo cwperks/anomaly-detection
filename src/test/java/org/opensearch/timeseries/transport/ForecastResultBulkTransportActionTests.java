@@ -37,6 +37,7 @@ import org.opensearch.forecast.transport.ForecastResultBulkTransportAction;
 import org.opensearch.index.IndexingPressure;
 import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.TestHelpers;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ForecastResultBulkTransportActionTests extends AbstractTimeSeriesTest {
@@ -46,6 +47,7 @@ public class ForecastResultBulkTransportActionTests extends AbstractTimeSeriesTe
     private ClusterService clusterService;
     private IndexingPressure indexingPressure;
     private Client client;
+    private RunAsSubjectClient pluginClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -76,6 +78,7 @@ public class ForecastResultBulkTransportActionTests extends AbstractTimeSeriesTe
         indexingPressure = mock(IndexingPressure.class);
 
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         resultBulk = new ForecastResultBulkTransportAction(
             transportService,
@@ -83,7 +86,8 @@ public class ForecastResultBulkTransportActionTests extends AbstractTimeSeriesTe
             indexingPressure,
             settings,
             clusterService,
-            client
+            client,
+            pluginClient
         );
     }
 

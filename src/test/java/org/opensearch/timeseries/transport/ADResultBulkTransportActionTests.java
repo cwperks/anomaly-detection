@@ -45,6 +45,7 @@ import org.opensearch.index.IndexingPressure;
 import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.TestHelpers;
 import org.opensearch.timeseries.constant.CommonMessages;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ADResultBulkTransportActionTests extends AbstractTimeSeriesTest {
@@ -53,6 +54,7 @@ public class ADResultBulkTransportActionTests extends AbstractTimeSeriesTest {
     private ClusterService clusterService;
     private IndexingPressure indexingPressure;
     private Client client;
+    private RunAsSubjectClient pluginClient;
     private String detectorId;
 
     @BeforeClass
@@ -84,9 +86,18 @@ public class ADResultBulkTransportActionTests extends AbstractTimeSeriesTest {
         indexingPressure = mock(IndexingPressure.class);
 
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         detectorId = randomAlphaOfLength(5);
 
-        resultBulk = new ADResultBulkTransportAction(transportService, actionFilters, indexingPressure, settings, clusterService, client);
+        resultBulk = new ADResultBulkTransportAction(
+            transportService,
+            actionFilters,
+            indexingPressure,
+            settings,
+            clusterService,
+            client,
+            pluginClient
+        );
     }
 
     @Override

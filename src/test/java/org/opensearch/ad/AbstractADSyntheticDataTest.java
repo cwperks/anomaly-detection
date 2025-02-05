@@ -93,7 +93,7 @@ public class AbstractADSyntheticDataTest extends AbstractSyntheticDataTest {
     protected void runDetectionResult(String detectorId, Instant begin, Instant end, RestClient client, int entitySize) throws IOException,
         InterruptedException {
         // trigger run in current interval
-        Request request = new Request("POST", String.format(Locale.ROOT, "/_opendistro/_anomaly_detection/detectors/%s/_run", detectorId));
+        Request request = new Request("POST", String.format(Locale.ROOT, "/_plugins/_anomaly_detection/detectors/%s/_run", detectorId));
         request
             .setJsonEntity(
                 String.format(Locale.ROOT, "{ \"period_start\": %d, \"period_end\": %d }", begin.toEpochMilli(), end.toEpochMilli())

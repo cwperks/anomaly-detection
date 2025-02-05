@@ -39,6 +39,7 @@ import org.opensearch.timeseries.model.IndexableResult;
 import org.opensearch.timeseries.ratelimit.ResultWriteRequest;
 import org.opensearch.timeseries.util.BulkUtil;
 import org.opensearch.timeseries.util.RestHandlerUtils;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 @SuppressWarnings("rawtypes")
@@ -53,6 +54,7 @@ public abstract class ResultBulkTransportAction<ResultType extends IndexableResu
     private Client client;
     protected Random random;
     protected NodeStateManager nodeStateManager;
+    private RunAsSubjectClient pluginClient;
 
     public ResultBulkTransportAction(
         String actionName,
@@ -64,12 +66,14 @@ public abstract class ResultBulkTransportAction<ResultType extends IndexableResu
         float softLimit,
         float hardLimit,
         String indexName,
-        Writeable.Reader<ResultBulkRequestType> requestReader
+        Writeable.Reader<ResultBulkRequestType> requestReader,
+        RunAsSubjectClient pluginClient
     ) {
         super(actionName, transportService, actionFilters, requestReader, ThreadPool.Names.SAME);
         this.indexingPressure = indexingPressure;
         this.primaryAndCoordinatingLimits = MAX_INDEXING_BYTES.get(settings).getBytes();
         this.client = client;
+        this.pluginClient = pluginClient;
 
         this.softLimit = softLimit;
         this.hardLimit = hardLimit;
@@ -96,7 +100,7 @@ public abstract class ResultBulkTransportAction<ResultType extends IndexableResu
         BulkRequest bulkRequest = prepareBulkRequest(indexingPressurePercent, request);
 
         if (bulkRequest.numberOfActions() > 0) {
-            client.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(bulkResponse -> {
+            pluginClient.execute(BulkAction.INSTANCE, bulkRequest, ActionListener.wrap(bulkResponse -> {
                 List<IndexRequest> failedRequests = BulkUtil.getFailedIndexRequest(bulkRequest, bulkResponse);
                 listener.onResponse(new ResultBulkResponse(failedRequests));
             }, e -> {

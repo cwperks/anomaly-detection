@@ -27,6 +27,7 @@ import org.opensearch.forecast.model.ForecastResult;
 import org.opensearch.forecast.ratelimit.ForecastResultWriteRequest;
 import org.opensearch.index.IndexingPressure;
 import org.opensearch.timeseries.transport.ResultBulkTransportAction;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 import org.opensearch.transport.TransportService;
 
 public class ForecastResultBulkTransportAction extends
@@ -39,7 +40,8 @@ public class ForecastResultBulkTransportAction extends
         IndexingPressure indexingPressure,
         Settings settings,
         ClusterService clusterService,
-        Client client
+        Client client,
+        RunAsSubjectClient pluginClient
     ) {
         super(
             ForecastResultBulkAction.NAME,
@@ -51,7 +53,8 @@ public class ForecastResultBulkTransportAction extends
             FORECAST_INDEX_PRESSURE_SOFT_LIMIT.get(settings),
             FORECAST_INDEX_PRESSURE_HARD_LIMIT.get(settings),
             ForecastIndex.RESULT.getIndexName(),
-            ForecastResultBulkRequest::new
+            ForecastResultBulkRequest::new,
+            pluginClient
         );
         clusterService.getClusterSettings().addSettingsUpdateConsumer(FORECAST_INDEX_PRESSURE_SOFT_LIMIT, it -> softLimit = it);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(FORECAST_INDEX_PRESSURE_HARD_LIMIT, it -> hardLimit = it);
