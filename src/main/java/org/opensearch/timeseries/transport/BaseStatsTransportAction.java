@@ -55,7 +55,7 @@ public abstract class BaseStatsTransportAction extends HandledTransportAction<St
     @Override
     protected void doExecute(Task task, StatsRequest request, ActionListener<StatsTimeSeriesResponse> actionListener) {
         ActionListener<StatsTimeSeriesResponse> listener = wrapRestActionListener(actionListener, CommonMessages.FAIL_TO_GET_STATS);
-        getStats(pluginClient, listener, request);
+        getStats(client, listener, request);
     }
 
     /**
@@ -74,7 +74,7 @@ public abstract class BaseStatsTransportAction extends HandledTransportAction<St
             false
         );
 
-        getClusterStats(client, delegateListener, statsRequest);
+        getClusterStats(pluginClient, delegateListener, statsRequest);
         getNodeStats(client, delegateListener, statsRequest);
     }
 

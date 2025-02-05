@@ -12,6 +12,6 @@
 package org.opensearch.forecast.constant;
 
 public class ForecastCommonValue {
-    public static String INTERNAL_ACTION_PREFIX = "cluster:admin/plugin/forecastinternal/";
+    public static String INTERNAL_ACTION_PREFIX = "internal:admin/plugin/forecastinternal/";
     public static String EXTERNAL_ACTION_PREFIX = "cluster:admin/plugin/forecast/";
 }

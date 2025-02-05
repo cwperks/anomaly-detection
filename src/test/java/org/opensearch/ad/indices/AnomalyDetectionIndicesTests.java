@@ -20,6 +20,7 @@ import org.opensearch.ad.constant.ADCommonName;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
+import org.opensearch.identity.noop.NoopSubject;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.timeseries.TestHelpers;
 import org.opensearch.timeseries.TimeSeriesAnalyticsPlugin;
@@ -27,12 +28,14 @@ import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.indices.IndexManagementIntegTestCase;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class AnomalyDetectionIndicesTests extends IndexManagementIntegTestCase<ADIndex, ADIndexManagement> {
 
     private ADIndexManagement indices;
     private Settings settings;
     private DiscoveryNodeFilterer nodeFilter;
+    private RunAsSubjectClient pluginClient;
 
     // help register setting using TimeSeriesAnalyticsPlugin.getSettings.
     // Otherwise, ADIndexManagement's constructor would fail due to
@@ -52,6 +55,9 @@ public class AnomalyDetectionIndicesTests extends IndexManagementIntegTestCase<A
             .put("plugins.anomaly_detection.request_timeout", TimeValue.timeValueSeconds(10))
             .build();
 
+        pluginClient = new RunAsSubjectClient(client());
+        pluginClient.setSubject(new NoopSubject());
+
         nodeFilter = new DiscoveryNodeFilterer(clusterService());
 
         indices = new ADIndexManagement(
@@ -61,7 +67,8 @@ public class AnomalyDetectionIndicesTests extends IndexManagementIntegTestCase<A
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
     }
 

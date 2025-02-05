@@ -29,6 +29,7 @@ import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
+import org.opensearch.identity.noop.NoopSubject;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.test.OpenSearchIntegTestCase;
@@ -38,12 +39,14 @@ import org.opensearch.timeseries.function.ExecutorFunction;
 import org.opensearch.timeseries.indices.IndexManagementIntegTestCase;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.TEST, numDataNodes = 0, numClientNodes = 0, supportsDedicatedMasters = false)
 public class ForecastIndexManagementTests extends IndexManagementIntegTestCase<ForecastIndex, ForecastIndexManagement> {
     private ForecastIndexManagement indices;
     private Settings settings;
     private DiscoveryNodeFilterer nodeFilter;
+    private RunAsSubjectClient pluginClient;
 
     @Override
     protected boolean ignoreExternalCluster() {
@@ -73,6 +76,9 @@ public class ForecastIndexManagementTests extends IndexManagementIntegTestCase<F
 
         nodeFilter = new DiscoveryNodeFilterer(clusterService());
 
+        pluginClient = new RunAsSubjectClient(client());
+        pluginClient.setSubject(new NoopSubject());
+
         indices = new ForecastIndexManagement(
             client(),
             clusterService(),
@@ -80,7 +86,8 @@ public class ForecastIndexManagementTests extends IndexManagementIntegTestCase<F
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
     }
 
@@ -224,7 +231,8 @@ public class ForecastIndexManagementTests extends IndexManagementIntegTestCase<F
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
         indices.rolloverAndDeleteHistoryIndex();
 

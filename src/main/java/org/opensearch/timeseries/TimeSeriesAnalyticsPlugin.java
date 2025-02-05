@@ -601,7 +601,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
                     settings,
                     nodeFilter,
                     TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-                    xContentRegistry
+                    xContentRegistry,
+                    pluginClient
                 )
             )
             .get();
@@ -1015,7 +1016,8 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
                     settings,
                     nodeFilter,
                     ForecastSettings.FORECAST_MAX_UPDATE_RETRY_TIMES,
-                    xContentRegistry
+                    xContentRegistry,
+                    pluginClient
                 )
             )
             .get();

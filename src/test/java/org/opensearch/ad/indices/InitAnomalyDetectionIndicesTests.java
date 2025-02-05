@@ -46,6 +46,7 @@ import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class InitAnomalyDetectionIndicesTests extends AbstractTimeSeriesTest {
     Client client;
@@ -58,6 +59,7 @@ public class InitAnomalyDetectionIndicesTests extends AbstractTimeSeriesTest {
     ClusterState clusterState;
     IndicesAdminClient indicesClient;
     int numberOfHotNodes;
+    RunAsSubjectClient pluginClient;
 
     @Override
     public void setUp() throws Exception {
@@ -71,6 +73,7 @@ public class InitAnomalyDetectionIndicesTests extends AbstractTimeSeriesTest {
 
         clusterService = mock(ClusterService.class);
         threadPool = mock(ThreadPool.class);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         numberOfHotNodes = 4;
         nodeFilter = mock(DiscoveryNodeFilterer.class);
@@ -105,7 +108,8 @@ public class InitAnomalyDetectionIndicesTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
     }
 

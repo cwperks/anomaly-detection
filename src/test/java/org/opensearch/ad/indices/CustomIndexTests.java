@@ -41,6 +41,7 @@ import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.constant.CommonName;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class CustomIndexTests extends AbstractTimeSeriesTest {
     ADIndexManagement adIndices;
@@ -50,12 +51,14 @@ public class CustomIndexTests extends AbstractTimeSeriesTest {
     ClusterState clusterState;
     String customIndexName;
     ClusterName clusterName;
+    RunAsSubjectClient pluginClient;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         client = mock(Client.class);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         clusterService = mock(ClusterService.class);
 
@@ -93,7 +96,8 @@ public class CustomIndexTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
     }
 

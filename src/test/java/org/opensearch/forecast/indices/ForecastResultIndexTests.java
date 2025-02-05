@@ -50,6 +50,7 @@ import org.opensearch.timeseries.function.ExecutorFunction;
 import org.opensearch.timeseries.indices.IndexManagement;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class ForecastResultIndexTests extends AbstractTimeSeriesTest {
     private ForecastIndexManagement forecastIndices;
@@ -61,6 +62,7 @@ public class ForecastResultIndexTests extends AbstractTimeSeriesTest {
     private long defaultMaxDocs;
     private int numberOfNodes;
     private Client client;
+    private RunAsSubjectClient pluginClient;
 
     @Override
     public void setUp() throws Exception {
@@ -69,6 +71,7 @@ public class ForecastResultIndexTests extends AbstractTimeSeriesTest {
         indicesClient = mock(IndicesAdminClient.class);
         AdminClient adminClient = mock(AdminClient.class);
         clusterService = mock(ClusterService.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         ClusterSettings clusterSettings = new ClusterSettings(
             Settings.EMPTY,
             Collections
@@ -105,7 +108,8 @@ public class ForecastResultIndexTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
 
         clusterAdminClient = mock(ClusterAdminClient.class);

@@ -70,6 +70,7 @@ import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.TestHelpers;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class RolloverTests extends AbstractTimeSeriesTest {
     private ADIndexManagement adIndices;
@@ -82,6 +83,7 @@ public class RolloverTests extends AbstractTimeSeriesTest {
     private NamedXContentRegistry namedXContentRegistry;
     private long defaultMaxDocs;
     private int numberOfNodes;
+    private RunAsSubjectClient pluginClient;
 
     @Override
     public void setUp() throws Exception {
@@ -90,6 +92,7 @@ public class RolloverTests extends AbstractTimeSeriesTest {
         indicesClient = mock(IndicesAdminClient.class);
         AdminClient adminClient = mock(AdminClient.class);
         clusterService = mock(ClusterService.class);
+        pluginClient = mock(RunAsSubjectClient.class);
         ClusterSettings clusterSettings = new ClusterSettings(
             Settings.EMPTY,
             Collections
@@ -128,7 +131,8 @@ public class RolloverTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            namedXContentRegistry
+            namedXContentRegistry,
+            pluginClient
         );
 
         clusterAdminClient = mock(ClusterAdminClient.class);

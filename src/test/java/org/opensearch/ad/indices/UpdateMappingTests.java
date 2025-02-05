@@ -60,6 +60,7 @@ import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.timeseries.AbstractTimeSeriesTest;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class UpdateMappingTests extends AbstractTimeSeriesTest {
     private static String resultIndexName;
@@ -73,6 +74,7 @@ public class UpdateMappingTests extends AbstractTimeSeriesTest {
     private Client client;
     private Settings settings;
     private DiscoveryNodeFilterer nodeFilter;
+    private RunAsSubjectClient pluginClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -88,6 +90,7 @@ public class UpdateMappingTests extends AbstractTimeSeriesTest {
         when(client.admin()).thenReturn(adminClient);
         indicesAdminClient = mock(IndicesAdminClient.class);
         when(adminClient.indices()).thenReturn(indicesAdminClient);
+        pluginClient = mock(RunAsSubjectClient.class);
 
         clusterService = mock(ClusterService.class);
         ClusterSettings clusterSettings = new ClusterSettings(
@@ -132,7 +135,8 @@ public class UpdateMappingTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             TimeSeriesSettings.MAX_UPDATE_RETRY_TIMES,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
 
         // simulate search config index for custom result index
@@ -319,7 +323,16 @@ public class UpdateMappingTests extends AbstractTimeSeriesTest {
             return null;
         }).when(indicesAdminClient).updateSettings(any(), any());
 
-        adIndices = new ADIndexManagement(client, clusterService, threadPool, settings, nodeFilter, 1, NamedXContentRegistry.EMPTY);
+        adIndices = new ADIndexManagement(
+            client,
+            clusterService,
+            threadPool,
+            settings,
+            nodeFilter,
+            1,
+            NamedXContentRegistry.EMPTY,
+            pluginClient
+        );
 
         adIndices.update();
         adIndices.update();

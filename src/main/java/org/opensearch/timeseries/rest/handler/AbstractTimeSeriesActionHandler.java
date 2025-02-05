@@ -715,7 +715,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
 
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query).size(0).timeout(requestTimeout);
             SearchRequest searchRequest = new SearchRequest(CommonName.CONFIG_INDEX).source(searchSourceBuilder);
-            client
+            pluginClient
                 .search(
                     searchRequest,
                     ActionListener
@@ -742,7 +742,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
 
                     SearchRequest searchRequest = new SearchRequest(CommonName.CONFIG_INDEX).source(searchSourceBuilder);
 
-                    client
+                    pluginClient
                         .search(
                             searchRequest,
                             ActionListener
@@ -956,7 +956,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
             }
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(boolQueryBuilder).timeout(requestTimeout);
             SearchRequest searchRequest = new SearchRequest(CommonName.CONFIG_INDEX).source(searchSourceBuilder);
-            client
+            pluginClient
                 .search(
                     searchRequest,
                     ActionListener

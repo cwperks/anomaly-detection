@@ -89,6 +89,7 @@ import org.opensearch.timeseries.function.ExecutorFunction;
 import org.opensearch.timeseries.model.Config;
 import org.opensearch.timeseries.settings.TimeSeriesSettings;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
@@ -139,6 +140,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
     protected BiCheckedFunction<XContentParser, String, ? extends Config, IOException> configParser;
     protected String customResultIndexPrefix;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    protected final RunAsSubjectClient pluginClient;
 
     protected class IndexState {
         // keep track of whether the mapping version is up-to-date
@@ -170,7 +172,8 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
         String resultMapping,
         NamedXContentRegistry xContentRegistry,
         BiCheckedFunction<XContentParser, String, ? extends Config, IOException> configParser,
-        String customResultIndexPrefix
+        String customResultIndexPrefix,
+        RunAsSubjectClient pluginClient
     )
         throws IOException {
         this.client = client;
@@ -195,6 +198,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
         this.xContentRegistry = xContentRegistry;
         this.configParser = configParser;
         this.customResultIndexPrefix = customResultIndexPrefix;
+        this.pluginClient = pluginClient;
     }
 
     /**
@@ -323,7 +327,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
                 candidates.remove(latestToDelete);
                 String[] toDelete = candidates.toArray(Strings.EMPTY_ARRAY);
                 DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(toDelete);
-                adminClient.indices().delete(deleteIndexRequest, ActionListener.wrap(deleteIndexResponse -> {
+                pluginClient.admin().indices().delete(deleteIndexRequest, ActionListener.wrap(deleteIndexResponse -> {
                     if (!deleteIndexResponse.isAcknowledged()) {
                         logger.error("Could not delete one or more result indices: {}. Retrying one by one.", Arrays.toString(toDelete));
                         deleteIndexIteration(toDelete);
@@ -460,7 +464,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
         CreateIndexRequest request = new CreateIndexRequest(CommonName.CONFIG_INDEX)
             .mapping(getConfigMappings(), XContentType.JSON)
             .settings(settings);
-        adminClient.indices().create(request, actionListener);
+        pluginClient.admin().indices().create(request, actionListener);
     }
 
     /**
@@ -525,7 +529,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
                         .put(IndexMetadata.SETTING_AUTO_EXPAND_REPLICAS, minJobIndexReplicas + "-" + maxJobIndexReplicas)
                         .put(IndexMetadata.SETTING_INDEX_HIDDEN, true)
                 );
-            adminClient.indices().create(request, actionListener);
+            pluginClient.admin().indices().create(request, actionListener);
         } catch (IOException e) {
             logger.error("Fail to init AD job index", e);
             actionListener.onFailure(e);
@@ -808,7 +812,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
         SearchRequest searchRequest = new SearchRequest()
             .indices(new String[] { configIndex.getIndexName() })
             .source(new SearchSourceBuilder().size(10000).query(boolQuery));
-        client.search(searchRequest, ActionListener.wrap(r -> {
+        pluginClient.search(searchRequest, ActionListener.wrap(r -> {
             if (r == null || r.getHits().getTotalHits() == null || r.getHits().getTotalHits().value == 0) {
                 logger.info("no config available.");
                 listener.onResponse(new ArrayList<Config>());
@@ -1036,7 +1040,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
 
             choosePrimaryShards(request, false);
 
-            adminClient.indices().create(request, ActionListener.wrap(response -> {
+            pluginClient.admin().indices().create(request, ActionListener.wrap(response -> {
                 if (response.isAcknowledged()) {
                     logger.info("Successfully created flattened result index: {} with alias: {}", indexName, flattenedResultIndexAlias);
                     actionListener.onResponse(response);
@@ -1398,7 +1402,7 @@ public abstract class IndexManagement<IndexType extends Enum<IndexType> & TimeSe
         // make index hidden if default result index is true
         choosePrimaryShards(request, hiddenIndex);
         if (defaultResultIndex) {
-            adminClient.indices().create(request, markMappingUpToDate(resultIndex, actionListener));
+            pluginClient.admin().indices().create(request, markMappingUpToDate(resultIndex, actionListener));
         } else {
             request
                 .settings(

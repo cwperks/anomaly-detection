@@ -45,6 +45,7 @@ import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.timeseries.common.exception.EndRunException;
 import org.opensearch.timeseries.indices.IndexManagement;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -79,7 +80,8 @@ public class ADIndexManagement extends IndexManagement<ADIndex> {
         Settings settings,
         DiscoveryNodeFilterer nodeFilter,
         int maxUpdateRunningTimes,
-        NamedXContentRegistry xContentRegistry
+        NamedXContentRegistry xContentRegistry,
+        RunAsSubjectClient pluginClient
     )
         throws IOException {
         super(
@@ -97,7 +99,8 @@ public class ADIndexManagement extends IndexManagement<ADIndex> {
             ADIndex.RESULT.getMapping(),
             xContentRegistry,
             AnomalyDetector::parse,
-            ADCommonName.CUSTOM_RESULT_INDEX_PREFIX
+            ADCommonName.CUSTOM_RESULT_INDEX_PREFIX,
+            pluginClient
         );
 
         this.indexStates = new EnumMap<ADIndex, IndexState>(ADIndex.class);
@@ -223,7 +226,7 @@ public class ADIndexManagement extends IndexManagement<ADIndex> {
             CreateIndexRequest request = new CreateIndexRequest(ADCommonName.DETECTION_STATE_INDEX)
                 .mapping(getStateMappings(), XContentType.JSON)
                 .settings(settings);
-            adminClient.indices().create(request, markMappingUpToDate(ADIndex.STATE, actionListener));
+            pluginClient.admin().indices().create(request, markMappingUpToDate(ADIndex.STATE, actionListener));
         } catch (IOException e) {
             logger.error("Fail to init AD detection state index", e);
             actionListener.onFailure(e);

@@ -12,6 +12,6 @@
 package org.opensearch.ad.constant;
 
 public class ADCommonValue {
-    public static String INTERNAL_ACTION_PREFIX = "cluster:admin/opendistro/adinternal/";
+    public static String INTERNAL_ACTION_PREFIX = "internal:admin/opendistro/adinternal/";
     public static String EXTERNAL_ACTION_PREFIX = "cluster:admin/opendistro/ad/";
 }

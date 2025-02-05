@@ -948,7 +948,8 @@ public class AnomalyDetectorJobRunnerTests extends AbstractTimeSeriesTest {
             settings,
             nodeFilter,
             1,
-            NamedXContentRegistry.EMPTY
+            NamedXContentRegistry.EMPTY,
+            pluginClient
         );
         adJobProcessor.setIndexManagement(anomalyDetectionIndices);
     }

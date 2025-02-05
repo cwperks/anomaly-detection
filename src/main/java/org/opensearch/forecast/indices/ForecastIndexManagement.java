@@ -50,6 +50,7 @@ import org.opensearch.timeseries.common.exception.TimeSeriesException;
 import org.opensearch.timeseries.function.ExecutorFunction;
 import org.opensearch.timeseries.indices.IndexManagement;
 import org.opensearch.timeseries.util.DiscoveryNodeFilterer;
+import org.opensearch.timeseries.util.RunAsSubjectClient;
 
 public class ForecastIndexManagement extends IndexManagement<ForecastIndex> {
     private static final Logger logger = LogManager.getLogger(ForecastIndexManagement.class);
@@ -79,7 +80,8 @@ public class ForecastIndexManagement extends IndexManagement<ForecastIndex> {
         Settings settings,
         DiscoveryNodeFilterer nodeFilter,
         int maxUpdateRunningTimes,
-        NamedXContentRegistry xContentRegistry
+        NamedXContentRegistry xContentRegistry,
+        RunAsSubjectClient pluginClient
     )
         throws IOException {
         super(
@@ -97,7 +99,8 @@ public class ForecastIndexManagement extends IndexManagement<ForecastIndex> {
             ForecastIndex.RESULT.getMapping(),
             xContentRegistry,
             Forecaster::parse,
-            ForecastCommonName.CUSTOM_RESULT_INDEX_PREFIX
+            ForecastCommonName.CUSTOM_RESULT_INDEX_PREFIX,
+            pluginClient
         );
         this.indexStates = new EnumMap<ForecastIndex, IndexState>(ForecastIndex.class);
 
@@ -193,7 +196,7 @@ public class ForecastIndexManagement extends IndexManagement<ForecastIndex> {
             CreateIndexRequest request = new CreateIndexRequest(ForecastCommonName.FORECAST_STATE_INDEX)
                 .mapping(getStateMappings(), XContentType.JSON)
                 .settings(settings);
-            adminClient.indices().create(request, markMappingUpToDate(ForecastIndex.STATE, actionListener));
+            pluginClient.admin().indices().create(request, markMappingUpToDate(ForecastIndex.STATE, actionListener));
         } catch (IOException e) {
             logger.error("Fail to init AD detection state index", e);
             actionListener.onFailure(e);
