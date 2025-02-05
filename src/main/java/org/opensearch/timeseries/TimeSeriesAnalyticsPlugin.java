@@ -14,6 +14,7 @@ package org.opensearch.timeseries;
 import static java.util.Collections.unmodifiableList;
 import static org.opensearch.ad.constant.ADCommonName.ANOMALY_RESULT_INDEX_ALIAS;
 import static org.opensearch.ad.constant.ADCommonName.CHECKPOINT_INDEX_NAME;
+import static org.opensearch.ad.constant.ADCommonName.CUSTOM_RESULT_INDEX_PREFIX;
 import static org.opensearch.ad.constant.ADCommonName.DETECTION_STATE_INDEX;
 import static org.opensearch.ad.indices.ADIndexManagement.ALL_AD_RESULTS_INDEX_PATTERN;
 import static org.opensearch.ad.settings.AnomalyDetectorSettings.AD_COOLDOWN_MINUTES;
@@ -1748,6 +1749,7 @@ public class TimeSeriesAnalyticsPlugin extends Plugin
         systemIndexDescriptors.add(new SystemIndexDescriptor(FORECAST_CHECKPOINT_INDEX_NAME, "Forecast Checkpoints index"));
         systemIndexDescriptors.add(new SystemIndexDescriptor(FORECAST_STATE_INDEX, "Forecast state index"));
         systemIndexDescriptors.add(new SystemIndexDescriptor(JOB_INDEX, "Time Series Analytics job index"));
+        systemIndexDescriptors.add(new SystemIndexDescriptor(CUSTOM_RESULT_INDEX_PREFIX + "*", "AD result alias pattern"));
         return systemIndexDescriptors;
     }
 

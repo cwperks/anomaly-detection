@@ -582,7 +582,7 @@ public abstract class AbstractTimeSeriesActionHandler<T extends ActionResponse, 
 
     protected void updateConfig(String id, boolean indexingDryRun, ActionListener<T> listener) {
         GetRequest request = new GetRequest(CommonName.CONFIG_INDEX, id);
-        client
+        pluginClient
             .get(
                 request,
                 ActionListener

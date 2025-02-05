@@ -64,5 +64,5 @@ public class ADCommonName {
     // ======================================
     public static final String DUMMY_AD_RESULT_ID = "dummy_ad_result_id";
     public static final String DUMMY_DETECTOR_ID = "dummy_detector_id";
-    public static final String CUSTOM_RESULT_INDEX_PREFIX = "opensearch-ad-plugin-result-";
+    public static final String CUSTOM_RESULT_INDEX_PREFIX = ".opensearch-ad-plugin-result-";
 }
